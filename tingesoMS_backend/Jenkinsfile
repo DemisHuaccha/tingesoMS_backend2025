@@ -5,7 +5,7 @@ pipeline {
         // Tu usuario de Docker Hub
         DOCKER_HUB_REPO = 'demishuaccha'
         // ID de la credencial configurada en Jenkins (Username/Password)
-        DOCKER_CREDENTIAL_ID = 'docker-hub-credentials'
+        DOCKER_CREDENTIAL_ID = 'dockerhub-creds'
     }
 
     stages {
