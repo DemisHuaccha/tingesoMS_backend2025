@@ -1,13 +1,13 @@
-package com.tingeso.tingesoMS_user.Dtos;
+package com.tingeso.tingesoMS_auth.Dtos;
 
 import lombok.Data;
+import java.time.LocalDate;
 
 @Data
 public class CreateUserDto {
-
-    private String firstName;
-    private String lastName;
+    private String name;
     private String email;
-    private String role;
-    private String phone;
+    private String password;
+    private LocalDate birthday;
+    private Boolean admin;
 }

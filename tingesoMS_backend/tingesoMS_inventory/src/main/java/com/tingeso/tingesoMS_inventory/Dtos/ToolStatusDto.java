@@ -1,4 +1,4 @@
-package com.tingeso.tingesoMS_tool.Dtos;
+package com.tingeso.tingesoMS_inventory.Dtos;
 
 import lombok.Data;
 
@@ -6,8 +6,4 @@ import lombok.Data;
 public class ToolStatusDto {
     private Long idTool;
     private Boolean status;
-    private Boolean underRepair;
-    private Boolean deleteStatus;
-    /*--------------------------*/
-    private String email;
 }

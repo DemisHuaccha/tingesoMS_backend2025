@@ -4,8 +4,6 @@ import lombok.Data;
 
 @Data
 public class ToolRankingDto {
-    private String nameTool;
-    private String categoryTool;
-    private Integer feeTool;
-    private Long quantityTool;
+    private String name;
+    private int quantity;
 }

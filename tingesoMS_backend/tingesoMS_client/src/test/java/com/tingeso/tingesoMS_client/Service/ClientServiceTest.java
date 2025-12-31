@@ -61,4 +61,15 @@ class ClientServiceTest {
         assertEquals("RESTRICTED", client.getStatus());
         verify(clientRepo).save(client);
     }
+    
+    @Test
+    void findAll() {
+        Client client = new Client();
+        client.setRut("12345678-9");
+        when(clientRepo.findAll()).thenReturn(java.util.List.of(client));
+
+        java.util.List<Client> result = clientService.findAll();
+        assertFalse(result.isEmpty());
+        assertEquals(1, result.size());
+    }
 }

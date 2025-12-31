@@ -57,4 +57,15 @@ class ToolServiceTest {
         assertFalse(tool.getStatus());
         verify(toolRepo).save(tool);
     }
+
+    @Test
+    void findAll() {
+        Tool tool = new Tool();
+        tool.setName("Drill");
+        when(toolRepo.findAll()).thenReturn(java.util.List.of(tool));
+
+        java.util.List<Tool> result = toolService.findAll();
+        assertFalse(result.isEmpty());
+        assertEquals(1, result.size());
+    }
 }

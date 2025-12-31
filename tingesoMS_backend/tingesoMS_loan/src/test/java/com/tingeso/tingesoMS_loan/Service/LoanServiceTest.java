@@ -47,7 +47,7 @@ class LoanServiceTest {
         tool.setName("Drill");
         tool.setCategory("Power");
         tool.setStatus(true); // Available
-        tool.setLoanFee(500);
+        // tool.setLoanFee(500); // Removed as it is not in ToolDto
         when(externalService.getToolById(toolId)).thenReturn(tool);
         
         // Mock Fee
