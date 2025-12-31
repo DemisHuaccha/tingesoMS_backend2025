@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tingeso-report
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tingeso-report
+  template:
+    metadata:
+      labels:
+        app: tingeso-report
+    spec:
+      containers:
+      - name: tingeso-report
+        image: tingeso-report-service:latest
+        imagePullPolicy: Never
+        env:
+        - name: SPRING_CONFIG_IMPORT
+          value: "optional:configserver:http://config-service:8888"
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: "http://eureka-service:8761/eureka/"

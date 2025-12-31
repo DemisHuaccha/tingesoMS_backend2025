@@ -1,0 +1,5 @@
+com\tingeso\tingesoMS_client\Repository\ClientRepositorie.class
+com\tingeso\tingesoMS_client\TingesoMsClientApplication.class
+com\tingeso\tingesoMS_client\Service\ClientService.class
+com\tingeso\tingesoMS_client\Controller\ClientController.class
+com\tingeso\tingesoMS_client\Entities\Client.class

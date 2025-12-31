@@ -1,0 +1,6 @@
+com\tingeso\tingesoMS_fee\Entities\ToolFee.class
+com\tingeso\tingesoMS_fee\TingesoMsFeeApplication.class
+com\tingeso\tingesoMS_fee\Controller\FeeController.class
+com\tingeso\tingesoMS_fee\Repository\ToolFeeRepository.class
+com\tingeso\tingesoMS_fee\Service\FeeService.class
+com\tingeso\tingesoMS_fee\Entities\GlobalFee.class

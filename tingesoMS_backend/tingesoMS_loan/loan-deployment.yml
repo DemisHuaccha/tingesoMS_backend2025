@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tingeso-loan
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tingeso-loan
+  template:
+    metadata:
+      labels:
+        app: tingeso-loan
+    spec:
+      containers:
+      - name: tingeso-loan
+        image: tingeso-loan-service:latest
+        imagePullPolicy: Never
+        env:
+        - name: SPRING_CONFIG_IMPORT
+          value: "optional:configserver:http://config-service:8888"
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: "http://eureka-service:8761/eureka/"
+        - name: MYSQL_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: mysql-config
+              key: host
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secrets
+              key: username
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secrets
+              key: password

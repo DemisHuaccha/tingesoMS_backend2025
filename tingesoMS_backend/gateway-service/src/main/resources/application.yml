@@ -1,0 +1,45 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: gateway-service
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+      routes:
+        - id: tingesoMS_auth
+          uri: lb://tingesoMS_auth
+          predicates:
+            - Path=/api/auth/**
+        - id: tingesoMS_client
+          uri: lb://tingesoMS_client
+          predicates:
+            - Path=/api/client/**
+        - id: tingesoMS_inventory
+          uri: lb://tingesoMS_inventory
+          predicates:
+            - Path=/api/tool/**
+        - id: tingesoMS_fee
+          uri: lb://tingesoMS_fee
+          predicates:
+            - Path=/api/fee/**
+        - id: tingesoMS_loan
+          uri: lb://tingesoMS_loan
+          predicates:
+            - Path=/api/loan/**
+        - id: tingesoMS_kardex
+          uri: lb://tingesoMS_kardex
+          predicates:
+            - Path=/api/cardex/**
+        - id: tingesoMS_report
+          uri: lb://tingesoMS_report
+          predicates:
+            - Path=/api/reports/**
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      default-zone: http://eureka-service:8761/eureka

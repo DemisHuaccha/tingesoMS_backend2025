@@ -1,0 +1,114 @@
+pipeline {
+    agent any
+
+    environment {
+        // Tu usuario de Docker Hub
+        DOCKER_HUB_REPO = 'demishuaccha'
+        // ID de la credencial configurada en Jenkins (Username/Password)
+        DOCKER_CREDENTIAL_ID = 'docker-hub-credentials'
+    }
+
+    stages {
+        stage('Login to Docker Hub') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIAL_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        // Soporte para SH (Linux/Mac) o BAT (Windows)
+                        if (isUnix()) {
+                            sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                        } else {
+                            bat 'echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Build and Push Microservices') {
+            parallel {
+                stage('Config Service') {
+                    steps {
+                        buildAndPush('config-service', 'config-service')
+                    }
+                }
+                stage('Eureka Service') {
+                    steps {
+                        buildAndPush('eureka-service', 'eureka-service')
+                    }
+                }
+                stage('Gateway Service') {
+                    steps {
+                        buildAndPush('gateway-service', 'gateway-service')
+                    }
+                }
+                stage('Auth Service') {
+                    steps {
+                        buildAndPush('tingesoMS_auth', 'tingeso-auth-service')
+                    }
+                }
+                stage('Client Service') {
+                    steps {
+                        buildAndPush('tingesoMS_client', 'tingeso-client-service')
+                    }
+                }
+                stage('Fee Service') {
+                    steps {
+                        buildAndPush('tingesoMS_fee', 'tingeso-fee-service')
+                    }
+                }
+                stage('Inventory Service') {
+                    steps {
+                        buildAndPush('tingesoMS_inventory', 'tingeso-inventory-service')
+                    }
+                }
+                stage('Kardex Service') {
+                    steps {
+                        buildAndPush('tingesoMS_kardex', 'tingeso-kardex-service')
+                    }
+                }
+                stage('Loan Service') {
+                    steps {
+                        buildAndPush('tingesoMS_loan', 'tingeso-loan-service')
+                    }
+                }
+                stage('Report Service') {
+                    steps {
+                        buildAndPush('tingesoMS_report', 'tingeso-report-service')
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+             script {
+                if (isUnix()) {
+                    sh 'docker logout'
+                } else {
+                    bat 'docker logout'
+                }
+            }
+        }
+    }
+}
+
+// Función auxiliar para construir y pushear
+def buildAndPush(folderName, imageName) {
+    script {
+        def fullName = "${DOCKER_HUB_REPO}/${imageName}:latest"
+        echo "Building ${fullName} from folder ${folderName}..."
+        
+        if (isUnix()) {
+            dir(folderName) {
+                sh "docker build -t ${fullName} ."
+                sh "docker push ${fullName}"
+            }
+        } else {
+            dir(folderName) {
+                bat "docker build -t ${fullName} ."
+                bat "docker push ${fullName}"
+            }
+        }
+    }
+}

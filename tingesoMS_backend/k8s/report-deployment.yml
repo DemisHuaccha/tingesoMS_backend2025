@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tingeso-report
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tingeso-report
+  template:
+    metadata:
+      labels:
+        app: tingeso-report
+    spec:
+      containers:
+      - name: tingeso-report
+        image: demishuaccha/tingeso-report-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SPRING_CONFIG_IMPORT
+          value: "optional:configserver:http://config-service:8888"
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: "http://eureka-service:8761/eureka/"
+        - name: MYSQL_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: mysql-config
+              key: host
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secrets
+              key: username
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secrets
+              key: password
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tingeso-report
+spec:
+  selector:
+    app: tingeso-report
+  ports:
+  - port: 8080
+    targetPort: 8080
+  type: ClusterIP

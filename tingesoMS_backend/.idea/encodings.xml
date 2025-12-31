@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/config-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/eureka-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/gateway-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/tingesoMS_auth/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/tingesoMS_client/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/tingesoMS_fee/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/tingesoMS_inventory/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/tingesoMS_kardex/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/tingesoMS_loan/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/tingesoMS_report/src/main/java" charset="UTF-8" />
+  </component>
+</project>

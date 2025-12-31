@@ -1,0 +1,42 @@
+package com.tingeso.tingesoMS_inventory.Entities;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Entity
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Table(name = "tools")
+public class Tool {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(unique = true, nullable = false)
+    private Long idTool;
+
+    @JsonProperty("name")
+    private String name;
+
+    @JsonProperty("category")
+    private String category;
+
+    @JsonProperty("stock")
+    private int stock;
+
+    @JsonProperty("status")
+    private Boolean status; // Available = true?
+
+    @JsonProperty("underRepair")
+    private Boolean underRepair;
+
+    @JsonProperty("deleteStatus")
+    private Boolean deleteStatus;
+
+    // Prices moved to M4
+}
