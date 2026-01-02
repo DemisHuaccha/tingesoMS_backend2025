@@ -17,13 +17,6 @@ spec:
         imagePullPolicy: Always
         ports:
         - containerPort: 8888
-        volumeMounts:
-        - name: config-volume
-          mountPath: /app/config-data
-      volumes:
-      - name: config-volume
-        configMap:
-          name: config-repo
 
 ---
 apiVersion: v1
