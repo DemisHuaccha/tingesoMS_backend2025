@@ -39,6 +39,30 @@ pipeline {
                 stage('Report Service') { steps { buildAndPush('tingesoMS_report', 'tingeso-report-service') } }
             }
         }
+
+        stage('Deploy to K8s') {
+            steps {
+                script {
+                    // 1. Aplica cambios en los manifiestos
+                    if (isUnix()) {
+                        sh 'kubectl diff -f k8s/ || true' // Muestra qué va a cambiar
+                        sh 'kubectl apply -f k8s/'
+                    } else {
+                        bat 'kubectl diff -f k8s/ || echo No diff available on Windows'
+                        bat 'kubectl apply -f k8s/'
+                    }
+                    
+                    // 2. Reinicia los deployments para que tomen la nueva imagen (tag: latest)
+                    def deployments = "config-service eureka-service gateway-service tingeso-auth tingeso-client tingeso-fee tingeso-inventory tingeso-kardex tingeso-loan tingeso-report"
+                    
+                    if (isUnix()) {
+                        sh "kubectl rollout restart deployment ${deployments}"
+                    } else {
+                        bat "kubectl rollout restart deployment ${deployments}"
+                    }
+                }
+            }
+        }
     }
 
     post {

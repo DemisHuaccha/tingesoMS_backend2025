@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-init-script
+data:
+  init.sql: |
+    -- Crear base de datos si no existe
+    CREATE DATABASE IF NOT EXISTS tingeso_db;
+    USE tingeso_db;
+
+    -- Crear usuarios y asignar privilegios
+    
+    -- Auth Service
+    CREATE USER IF NOT EXISTS 'user_auth'@'%' IDENTIFIED BY 'auth_pass_2025';
+    GRANT ALL PRIVILEGES ON tingeso_db.* TO 'user_auth'@'%';
+
+    -- Client Service
+    CREATE USER IF NOT EXISTS 'user_client'@'%' IDENTIFIED BY 'client_pass_2025';
+    GRANT ALL PRIVILEGES ON tingeso_db.* TO 'user_client'@'%';
+
+    -- Loan Service
+    CREATE USER IF NOT EXISTS 'user_loan'@'%' IDENTIFIED BY 'loan_pass_2025';
+    GRANT ALL PRIVILEGES ON tingeso_db.* TO 'user_loan'@'%';
+
+    -- Fee Service
+    CREATE USER IF NOT EXISTS 'user_fee'@'%' IDENTIFIED BY 'fee_pass_2025';
+    GRANT ALL PRIVILEGES ON tingeso_db.* TO 'user_fee'@'%';
+
+    -- Inventory Service
+    CREATE USER IF NOT EXISTS 'user_inventory'@'%' IDENTIFIED BY 'inv_pass_2025';
+    GRANT ALL PRIVILEGES ON tingeso_db.* TO 'user_inventory'@'%';
+
+    -- Kardex Service
+    CREATE USER IF NOT EXISTS 'user_kardex'@'%' IDENTIFIED BY 'kardex_pass_2025';
+    GRANT ALL PRIVILEGES ON tingeso_db.* TO 'user_kardex'@'%';
+
+    -- Report Service
+    CREATE USER IF NOT EXISTS 'user_report'@'%' IDENTIFIED BY 'report_pass_2025';
+    GRANT ALL PRIVILEGES ON tingeso_db.* TO 'user_report'@'%';
+
+    FLUSH PRIVILEGES;

@@ -12,6 +12,10 @@ spec:
       labels:
         app: tingeso-client
     spec:
+      initContainers:
+      - name: wait-for-mysql
+        image: busybox
+        command: ['sh', '-c', 'until nc -z -v -w30 mysql-service 3306; do echo "Waiting for MySQL..."; sleep 5; done;']
       containers:
       - name: tingeso-client
         image: demishuaccha/tingeso-client-service:latest

@@ -2,6 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: mysql-config
+  # ConfigMap para guardar datos de configuración no sensibles
 data:
   host: mysql-service
 
@@ -10,32 +11,65 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: mysql-secrets
+  # Secret para guardar datos sensibles como contraseñas codificadas
 type: Opaque
-stringData:
-  username: root
-  password: root
+data:
+  # data requiere que los valores estén codificados en Base64
+  # ROOT (cm9vdA== -> root)
+  username: cm9vdA==
+  password: cm9vdA==
+  
+  # Auth Service (user_auth / auth_pass_2025)
+  user_auth: dXNlcl9hdXRo
+  pass_auth: YXV0aF9wYXNzXzIwMjU=
+  
+  # Client Service (user_client / client_pass_2025)
+  user_client: dXNlcl9jbGllbnQ=
+  pass_client: Y2xpZW50X3Bhc3NfMjAyNQ==
+  
+  # Loan Service (user_loan / loan_pass_2025)
+  user_loan: dXNlcl9sb2Fu
+  pass_loan: bG9hbl9wYXNzXzIwMjU=
+  
+  # Fee Service (user_fee / fee_pass_2025)
+  user_fee: dXNlcl9mZWU=
+  pass_fee: ZmVlX3Bhc3NfMjAyNQ==
+  
+  # Inventory Service (user_inventory / inv_pass_2025)
+  user_inventory: dXNlcl9pbnZlbnRvcnk=
+  pass_inventory: aW52X3Bhc3NfMjAyNQ==
+  
+  # Kardex Service (user_kardex / kardex_pass_2025)
+  user_kardex: dXNlcl9rYXJkZXg=
+  pass_kardex: a2FyZGV4X3Bhc3NfMjAyNQ==
+  
+  # Report Service (user_report / report_pass_2025)
+  user_report: dXNlcl9yZXBvcnQ=
+  pass_report: cmVwb3J0X3Bhc3NfMjAyNQ==
 
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: mysql-pvc
+  # Solicitud de almacenamiento persistente para que los datos no se pierdan al reiniciar el pod
 spec:
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteOnce # Solo un nodo puede montar este volumen en modo lectura/escritura
   resources:
     requests:
-      storage: 1Gi
+      storage: 1Gi # Tamaño del disco solicitado
 
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mysql-deployment
+  # Deployment que gestiona la creación y escalado de los Pods de MySQL
 spec:
   selector:
     matchLabels:
-      app: mysql
+      app: mysql # Selecciona los pods con la etiqueta 'app: mysql'
   template:
     metadata:
       labels:
@@ -43,34 +77,45 @@ spec:
     spec:
       containers:
       - name: mysql
-        image: mysql:8.0
+        image: mysql:8.0 # Imagen oficial de MySQL versión 8.0
         env:
         - name: MYSQL_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: mysql-secrets
+              name: mysql-secrets # Obtiene la contraseña del Secret creado arriba
               key: password
         - name: MYSQL_DATABASE
-          value: tingeso_db
+          value: tingeso_db # Nombre de la base de datos a crear al inicio
         ports:
-        - containerPort: 3306
+        - containerPort: 3306 # Puerto interno del contenedor
+        livenessProbe:
+          exec:
+            command: ["mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$(MYSQL_ROOT_PASSWORD)"]
+          initialDelaySeconds: 30
+          periodSeconds: 10
         volumeMounts:
         - name: mysql-storage
-          mountPath: /var/lib/mysql
+          mountPath: /var/lib/mysql # Ruta donde MySQL guarda sus datos dentro del contenedor
+        - name: mysql-init-volume
+          mountPath: /docker-entrypoint-initdb.d # Script de inicialización
       volumes:
       - name: mysql-storage
         persistentVolumeClaim:
-          claimName: mysql-pvc
+          claimName: mysql-pvc # Conecta el volumen lógico con el disco persistente solicitado (PVC)
+      - name: mysql-init-volume
+        configMap:
+          name: mysql-init-script
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: mysql-service
+  # Servicio que expone la base de datos a otros pods dentro del clúster
 spec:
   selector:
-    app: mysql
+    app: mysql # Redirige el tráfico a los pods con esta etiqueta
   ports:
-    - port: 3306
-      targetPort: 3306
-  type: ClusterIP
+    - port: 3306 # Puerto expuesto por el servicio
+      targetPort: 3306 # Puerto al que apunta en el contenedor
+  type: ClusterIP # Tipo por defecto: solo accesible desde dentro del clúster
