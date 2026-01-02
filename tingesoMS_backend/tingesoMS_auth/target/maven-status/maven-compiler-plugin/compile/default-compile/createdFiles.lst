@@ -1,0 +1,6 @@
+com\tingeso\tingesoMS_auth\Service\UserService.class
+com\tingeso\tingesoMS_auth\Dtos\CreateUserDto.class
+com\tingeso\tingesoMS_auth\Controller\UserController.class
+com\tingeso\tingesoMS_auth\TingesoMsAuthApplication.class
+com\tingeso\tingesoMS_auth\Repository\UserRepositorie.class
+com\tingeso\tingesoMS_auth\Entities\User.class

@@ -1,0 +1,7 @@
+com\tingeso\tingesoMS_kardex\Service\CardexService.class
+com\tingeso\tingesoMS_kardex\Service\CardexServiceImpl.class
+com\tingeso\tingesoMS_kardex\TingesoMsKardexApplication.class
+com\tingeso\tingesoMS_kardex\Dtos\CardexDto.class
+com\tingeso\tingesoMS_kardex\Entities\Cardex.class
+com\tingeso\tingesoMS_kardex\Controller\CardexController.class
+com\tingeso\tingesoMS_kardex\Repository\CardexRepositorie.class
