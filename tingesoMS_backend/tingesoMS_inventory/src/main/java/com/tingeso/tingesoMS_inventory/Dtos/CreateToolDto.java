@@ -7,4 +7,8 @@ public class CreateToolDto {
     private String name;
     private String category;
     private int stock;
+    private String initialCondition;
+    private Boolean status;
+    private Boolean underRepair;
+    private Boolean deleteStatus;
 }

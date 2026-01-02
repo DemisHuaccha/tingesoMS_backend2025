@@ -114,4 +114,87 @@ class LoanServiceTest {
         verify(externalService).updateClientStatus(5L);
         verify(externalService).logCardex(any());
     }
+
+    @Test
+    void isToolAvailableForClient() {
+        when(loanRepo.clientHasNoMatchingLoan(anyLong(), anyString(), anyString(), anyInt())).thenReturn(false);
+        Boolean result = loanService.isToolAvailableForClient(1L, "Drill", "Power", 500);
+        assertFalse(result); // False means Available (No conflict)
+    }
+
+    @Test
+    void returnLoanDamageTool() {
+        Long loanId = 1L;
+        LocalDate now = LocalDate.now();
+        
+        Loan loan = new Loan();
+        loan.setIdLoan(loanId);
+        loan.setLoanStatus(true);
+        loan.setReturnDate(now);
+        loan.setToolId(10L);
+        
+        when(loanRepo.findById(loanId)).thenReturn(Optional.of(loan));
+        
+        ToolDto tool = new ToolDto();
+        tool.setDamageValue(2000);
+        when(externalService.getToolById(10L)).thenReturn(tool);
+        
+        ToolFeeDto fee = new ToolFeeDto();
+        fee.setPenaltyForDelay(100);
+        when(externalService.getToolFee(10L)).thenReturn(fee);
+        
+        when(loanRepo.save(any(Loan.class))).thenReturn(loan);
+        
+        Loan result = loanService.returnLoanDamageTool(loanId, now);
+        
+        assertTrue(result.getPenalty());
+        assertEquals(2000, result.getPenaltyTotal());
+    }
+
+    @Test
+    void returnLoanDeleteTool() {
+        Long loanId = 1L;
+        LocalDate now = LocalDate.now();
+        
+        Loan loan = new Loan();
+        loan.setIdLoan(loanId);
+        loan.setLoanStatus(true);
+        loan.setReturnDate(now);
+        loan.setToolId(10L);
+        
+        when(loanRepo.findById(loanId)).thenReturn(Optional.of(loan));
+        
+        ToolDto tool = new ToolDto();
+        tool.setReplacementValue(5000);
+        when(externalService.getToolById(10L)).thenReturn(tool);
+        
+        ToolFeeDto fee = new ToolFeeDto();
+        fee.setPenaltyForDelay(100);
+        when(externalService.getToolFee(10L)).thenReturn(fee);
+        
+        when(loanRepo.save(any(Loan.class))).thenReturn(loan);
+        
+        Loan result = loanService.returnLoanDeleteTool(loanId, now);
+        
+        assertTrue(result.getPenalty());
+        assertEquals(5000, result.getPenaltyTotal());
+    }
+    
+    @Test
+    void findClientDelayed() {
+        when(loanRepo.findClientIdsWithDelayedLoans()).thenReturn(java.util.List.of(1L, 2L));
+        java.util.List<Long> result = loanService.findClientDelayed();
+        assertEquals(2, result.size());
+    }
+    
+    @Test
+    void findAll() {
+        // Mock findActiveAndOnTimeLoans or whatever findAll calls?
+        // Service Impl calls loanRepo.findAllWithClientAndToolIds();
+        LoanResponseDto dto = new LoanResponseDto();
+        when(loanRepo.findAllWithClientAndToolIds()).thenReturn(java.util.List.of(dto));
+        
+        java.util.List<LoanResponseDto> result = loanService.findAll();
+        assertFalse(result.isEmpty());
+    }
 }

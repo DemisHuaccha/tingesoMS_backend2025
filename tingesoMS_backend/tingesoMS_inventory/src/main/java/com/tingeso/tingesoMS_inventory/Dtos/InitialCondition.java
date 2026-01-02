@@ -1,4 +1,4 @@
-package com.tingeso.tingesoMS_tool.Dtos;
+package com.tingeso.tingesoMS_inventory.Dtos;
 
 public enum InitialCondition {
     New,

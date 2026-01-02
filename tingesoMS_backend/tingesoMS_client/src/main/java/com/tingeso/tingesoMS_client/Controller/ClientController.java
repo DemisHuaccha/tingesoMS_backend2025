@@ -49,4 +49,27 @@ public class ClientController {
     public ResponseEntity<List<Client>> getAll() {
         return ResponseEntity.ok(clientService.findAll());
     }
+    
+    @GetMapping("/byName")
+    public ResponseEntity<List<Client>> getByName(@RequestParam String name) {
+        return ResponseEntity.ok(clientService.findByName(name));
+    }
+    
+    @PutMapping("/update/{id}")
+    public ResponseEntity<Client> updateCustomer(@PathVariable Long id, @RequestBody Client client) {
+        Client updated = clientService.updateCustomer(id, client);
+        if(updated == null) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(updated);
+    }
+    
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<Void> deleteCustomer(@PathVariable Long id) {
+        clientService.deleteCustomer(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<String>> searchRuts(@RequestParam String rut) {
+        return ResponseEntity.ok(clientService.searchRuts(rut));
+    }
 }

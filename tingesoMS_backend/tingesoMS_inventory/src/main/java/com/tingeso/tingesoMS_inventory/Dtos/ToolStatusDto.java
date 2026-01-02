@@ -6,4 +6,6 @@ import lombok.Data;
 public class ToolStatusDto {
     private Long idTool;
     private Boolean status;
+    private Boolean underRepair;
+    private Boolean deleteStatus;
 }

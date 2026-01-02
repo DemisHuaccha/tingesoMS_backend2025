@@ -9,4 +9,8 @@ import java.util.Optional;
 @Repository
 public interface ClientRepositorie extends JpaRepository<Client, Long> {
     Optional<Client> findByRut(String rut);
+    
+    java.util.List<Client> findByName(String name);
+    
+    java.util.List<Client> findByRutContaining(String rut);
 }

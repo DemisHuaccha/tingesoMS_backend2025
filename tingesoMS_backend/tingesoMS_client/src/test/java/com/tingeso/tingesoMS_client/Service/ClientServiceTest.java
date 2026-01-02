@@ -72,4 +72,80 @@ class ClientServiceTest {
         assertFalse(result.isEmpty());
         assertEquals(1, result.size());
     }
+    
+    @Test
+    void findByName() {
+        Client client = new Client();
+        client.setName("John");
+        when(clientRepo.findByName("John")).thenReturn(java.util.List.of(client));
+        
+        java.util.List<Client> result = clientService.findByName("John");
+        assertFalse(result.isEmpty());
+        assertEquals("John", result.get(0).getName());
+    }
+    
+    @Test
+    void updateCustomer() {
+        Client client = new Client();
+        client.setIdCustomer(1L);
+        client.setName("Old Name");
+        
+        Client updates = new Client();
+        updates.setName("New Name");
+        
+        when(clientRepo.findById(1L)).thenReturn(Optional.of(client));
+        when(clientRepo.save(any(Client.class))).thenReturn(client);
+        
+        Client result = clientService.updateCustomer(1L, updates);
+        
+        assertNotNull(result);
+        assertEquals("New Name", result.getName());
+    }
+    
+    @Test
+    void deleteCustomer() {
+        Client client = new Client();
+        client.setIdCustomer(1L);
+        client.setStatus("ACTIVE");
+        
+        when(clientRepo.findById(1L)).thenReturn(Optional.of(client));
+        
+        clientService.deleteCustomer(1L);
+        
+        verify(clientRepo).save(client);
+    }
+    
+    @Test
+    void searchRuts() {
+        Client c = new Client();
+        c.setRut("11.111.111-1");
+        when(clientRepo.findByRutContaining("11.111")).thenReturn(java.util.List.of(c));
+        
+        java.util.List<String> results = clientService.searchRuts("11.111");
+        assertFalse(results.isEmpty());
+        assertEquals("11.111.111-1", results.get(0));
+    }
+    
+    @Test
+    void findDelayedClient() {
+        // Logic mocks external usage, so returning empty list logic is tested.
+        assertNotNull(clientService.findDelayedClient());
+    }
+    
+    @Test
+    void restrictClientsWithDelayedLoans() {
+        // As findDelayedClient returns empty, this loop does nothing, but ensures no exception.
+        clientService.restrictClientsWithDelayedLoans();
+    }
+    
+    @Test
+    void findById() {
+        Client client = new Client();
+        client.setIdCustomer(1L);
+        when(clientRepo.findById(1L)).thenReturn(Optional.of(client));
+        
+        Client result = clientService.findById(1L);
+        assertNotNull(result);
+        assertEquals(1L, result.getIdCustomer());
+    }
 }

@@ -13,17 +13,36 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    @PostMapping("/login")
-    public ResponseEntity<User> login(@RequestBody User loginUser) {
-        User user = userService.findByEmail(loginUser.getEmail());
-        if(user != null && user.getPassword().equals(loginUser.getPassword())) {
-            return ResponseEntity.ok(user);
-        }
-        return ResponseEntity.status(401).build();
+    @PostMapping("/register")
+    public ResponseEntity<User> register(@RequestBody User user){
+        User newUser = userService.register(user);
+        return ResponseEntity.ok(newUser);
+    }
+    
+    @GetMapping("/{id}")
+    public ResponseEntity<User> getById(@PathVariable Long id) {
+        User user = userService.findById(id);
+        if (user == null) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(user);
+    }
+    
+    @GetMapping("/all")
+    public ResponseEntity<java.util.List<User>> getAll() {
+        return ResponseEntity.ok(userService.findAll());
+    }
+    
+    @PutMapping("/update/{id}")
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
+        User updated = userService.updateUser(id, user);
+        if (updated == null) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(updated);
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<User> register(@RequestBody User user) {
-        return ResponseEntity.ok(userService.register(user));
+    @GetMapping("/getByEmail")
+    public ResponseEntity<User> getUserByEmail(@RequestParam String email) {
+        User user = userService.findByEmail(email);
+        if (user == null) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(user);
     }
+
 }

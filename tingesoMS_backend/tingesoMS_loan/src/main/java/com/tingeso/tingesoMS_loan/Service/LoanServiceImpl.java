@@ -164,7 +164,10 @@ public class LoanServiceImpl implements LoanService {
         
         ToolFeeDto fee = externalService.getToolFee(loan.getToolId());
         int penaltyForDelay = fee!=null ? fee.getPenaltyForDelay() : 0;
-        int damageValue = fee!=null ? fee.getDamageValue() : 0;
+        
+        // Fetch Tool from Inventory to get damage value
+        ToolDto tool = externalService.getToolById(loan.getToolId());
+        int damageValue = tool!=null ? tool.getDamageValue() : 0;
 
         long daysLate = ChronoUnit.DAYS.between(loan.getReturnDate(), actualReturnDate);
         int delayPenalty = (daysLate > 0) ? (int) (daysLate * penaltyForDelay) : 0;
@@ -194,7 +197,10 @@ public class LoanServiceImpl implements LoanService {
         
         ToolFeeDto fee = externalService.getToolFee(loan.getToolId());
         int penaltyForDelay = fee!=null ? fee.getPenaltyForDelay() : 0;
-        int replacementValue = fee!=null ? fee.getReplacementValue() : 0;
+        
+        // Fetch Tool from Inventory to get replacement value
+        ToolDto tool = externalService.getToolById(loan.getToolId());
+        int replacementValue = tool!=null ? tool.getReplacementValue() : 0;
 
         long daysLate = ChronoUnit.DAYS.between(loan.getReturnDate(), actualReturnDate);
         int delayPenalty = (daysLate > 0) ? (int) (daysLate * penaltyForDelay) : 0;

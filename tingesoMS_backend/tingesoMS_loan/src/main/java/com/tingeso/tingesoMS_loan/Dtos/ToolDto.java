@@ -11,4 +11,7 @@ public class ToolDto {
     private Boolean status;
     private Boolean underRepair;
     private Boolean deleteStatus;
+    
+    private int damageValue;
+    private int replacementValue;
 }

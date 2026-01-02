@@ -15,9 +15,10 @@ public class ToolController {
     @Autowired
     private ToolService toolService;
 
+    // Use DTO for creation to support multiple quantity
     @PostMapping("/create")
-    public ResponseEntity<Tool> createTool(@RequestBody Tool tool) {
-        return ResponseEntity.ok(toolService.save(tool));
+    public ResponseEntity<Tool> createTool(@RequestBody com.tingeso.tingesoMS_inventory.Dtos.CreateToolDto dto) {
+        return ResponseEntity.ok(toolService.save(dto));
     }
 
     @GetMapping("/{id}")
@@ -32,10 +33,54 @@ public class ToolController {
         return ResponseEntity.ok(toolService.findAll());
     }
     
+    @GetMapping("/available")
+    public ResponseEntity<List<Tool>> getAllAvailable() {
+        return ResponseEntity.ok(toolService.findAllAvalible());
+    }
+    
+    @GetMapping("/notDeleted")
+    public ResponseEntity<List<Tool>> getAllNotDelete() {
+        return ResponseEntity.ok(toolService.findAllNotDelete());
+    }
+    
+    @PutMapping("/update/{id}")
+    public ResponseEntity<Tool> updateTool(@RequestBody com.tingeso.tingesoMS_inventory.Dtos.CreateToolDto dto, @PathVariable Long id) {
+        return ResponseEntity.ok(toolService.updateTool(dto, id));
+    }
+    
     @PutMapping("/updateStatus")
     public ResponseEntity<Void> updateStatus(@RequestBody Tool tool) {
-        // Helper DTO probably better, but reusing Entity for simplify.
         toolService.updateStatus(tool.getIdTool(), tool.getStatus(), tool.getUnderRepair(), tool.getDeleteStatus());
         return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/underRepair")
+    public ResponseEntity<Tool> underRepairTool(@RequestBody com.tingeso.tingesoMS_inventory.Dtos.ToolStatusDto toolDto) {
+        // Mapped to generic status update logic in service, but exposed as specific endpoint
+        toolService.underRepairTool(toolDto.getIdTool(), toolDto.getUnderRepair());
+        return ResponseEntity.ok(toolService.findById(toolDto.getIdTool()));
+    }
+
+    @PutMapping("/deleteTool")
+    public ResponseEntity<Tool> deleteTool(@RequestBody com.tingeso.tingesoMS_inventory.Dtos.ToolStatusDto toolDto) {
+         // Mapped to specific logic
+         toolService.deleteTool(toolDto.getIdTool(), toolDto.getDeleteStatus());
+         return ResponseEntity.ok(toolService.findById(toolDto.getIdTool()));
+    }
+
+    
+    @PostMapping("/filter")
+    public ResponseEntity<List<Tool>> filterTools(@RequestParam String name) {
+        return ResponseEntity.ok(toolService.filterTools(name));
+    }
+    
+    @GetMapping("/group")
+    public ResponseEntity<List<com.tingeso.tingesoMS_inventory.Dtos.GroupToolsDto>> groupTools() {
+        return ResponseEntity.ok(toolService.groupTools());
+    }
+    
+    @GetMapping("/conditions")
+    public ResponseEntity<List<String>> getConditions() {
+        return ResponseEntity.ok(toolService.getConditions());
     }
 }
