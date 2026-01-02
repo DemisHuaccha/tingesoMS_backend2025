@@ -79,22 +79,20 @@ pipeline {
 }
 
 // Función auxiliar corregida para usar la subcarpeta
+// Función auxiliar corregida para usar la subcarpeta
 def buildAndPush(folderName, imageName) {
     script {
         def fullName = "${env.DOCKER_HUB_REPO}/${imageName}:latest"
-        // Construimos la ruta completa: tingesoMS_backend/nombre-del-servicio
         def fullPath = "${env.BASE_DIR}/${folderName}"
         
-        echo "Building ${fullName} from path ${fullPath}..."
-        
         dir(fullPath) {
-            if (isUnix()) {
-                sh "docker build -t ${fullName} ."
-                sh "docker push ${fullName}"
-            } else {
-                bat "docker build -t ${fullName} ."
-                bat "docker push ${fullName}"
-            }
+            echo "Construyendo JAR en Windows para ${imageName}..."
+            // Esto usa el internet de tu Windows, que no tiene el error 403
+            bat "mvn clean package -DskipTests" 
+            
+            echo "Empaquetando imagen Docker..."
+            bat "docker build -t ${fullName} ."
+            bat "docker push ${fullName}"
         }
     }
 }
