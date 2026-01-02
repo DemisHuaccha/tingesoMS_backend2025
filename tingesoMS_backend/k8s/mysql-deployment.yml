@@ -4,7 +4,7 @@ metadata:
   name: mysql-config
   # ConfigMap para guardar datos de configuración no sensibles
 data:
-  host: mysql-service
+  host: mysql-service.default.svc.cluster.local
 
 ---
 apiVersion: v1
