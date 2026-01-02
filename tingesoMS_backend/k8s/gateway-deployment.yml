@@ -19,9 +19,9 @@ spec:
         - containerPort: 8080
         env:
         - name: SPRING_CONFIG_IMPORT
-          value: "optional:configserver:http://config-service:8888"
+          value: "optional:configserver:http://config-service.default.svc.cluster.local:8888"
         - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
-          value: "http://eureka-service:8761/eureka/"
+          value: "http://eureka-service.default.svc.cluster.local:8761/eureka/"
 
 ---
 apiVersion: v1
