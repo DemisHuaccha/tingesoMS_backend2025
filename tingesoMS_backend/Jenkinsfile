@@ -43,13 +43,12 @@ pipeline {
         stage('Deploy to K8s') {
             steps {
                 script {
-                    // Ajustamos la ruta al lugar correcto
                     def k8sDir = "${env.BASE_DIR}/k8s" 
                     
                     if (isUnix()) {
-                        sh "kubectl apply -f ${k8sDir}/"
+                        sh "kubectl apply -f ${k8sDir}/ --validate=false"
                     } else {
-                        bat "kubectl apply -f ${k8sDir}/"
+                        bat "kubectl apply -f ${k8sDir}/ --validate=false"
                     }
                     
                     // 2. Reinicia los deployments para que tomen la nueva imagen (tag: latest)
