@@ -2,11 +2,8 @@ pipeline {
     agent any
 
     environment {
-        // Tu usuario de Docker Hub
         DOCKER_HUB_REPO = 'demishuaccha'
-        // ID de la credencial configurada en Jenkins (Username/Password)
         DOCKER_CREDENTIAL_ID = 'dockerhub-creds'
-        // Carpeta donde residen los microservicios
         BASE_DIR = 'tingesoMS_backend'
     }
 
@@ -45,13 +42,17 @@ pipeline {
                 script {
                     def k8sDir = "${env.BASE_DIR}/k8s" 
                     
+                    // --- AJUSTE PARA LIMPIAR DESORDEN ---
+                    echo "Limpiando pods duplicados o trabados antes de aplicar cambios..."
                     if (isUnix()) {
+                        sh "kubectl delete pods --field-selector=status.phase=Pending"
                         sh "kubectl apply -f ${k8sDir}/ --validate=false"
                     } else {
+                        bat "kubectl delete pods --field-selector=status.phase=Pending"
                         bat "kubectl apply -f ${k8sDir}/ --validate=false"
                     }
                     
-                    // 2. Reinicia los deployments para que tomen la nueva imagen (tag: latest)
+                    // Reinicia los deployments para que tomen la nueva imagen
                     def deployments = "config-service eureka-service gateway-service tingeso-auth tingeso-client tingeso-fee tingeso-inventory tingeso-kardex tingeso-loan tingeso-report"
                     
                     if (isUnix()) {
@@ -77,18 +78,14 @@ pipeline {
     }
 }
 
-// Función auxiliar corregida para usar la subcarpeta
-// Función auxiliar corregida para usar la subcarpeta
 def buildAndPush(folderName, imageName) {
     script {
         def fullName = "${env.DOCKER_HUB_REPO}/${imageName}:latest"
         def fullPath = "${env.BASE_DIR}/${folderName}"
         
         dir(fullPath) {
-            echo "Construyendo JAR en Windows para ${imageName}..."
-            // Esto usa el internet de tu Windows, que no tiene el error 403
+            echo "Construyendo JAR para ${imageName}..."
             bat "mvn clean package -DskipTests" 
-            
             echo "Empaquetando imagen Docker..."
             bat "docker build -t ${fullName} ."
             bat "docker push ${fullName}"
