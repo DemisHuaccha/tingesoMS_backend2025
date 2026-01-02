@@ -3,7 +3,6 @@ kind: Deployment
 metadata:
   name: tingeso-report
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: tingeso-report
