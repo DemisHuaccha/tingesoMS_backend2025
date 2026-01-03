@@ -59,4 +59,16 @@ spec:
   - port: 8080
     targetPort: 8080
     nodePort: 30080 # Puerto para acceder desde tu navegador en Windows
+    readinessProbe:
+        httpGet:
+            path: /actuator/health
+            port: 8080
+        initialDelaySeconds: 40 # Dale tiempo a Spring para arrancar
+        periodSeconds: 10
+    livenessProbe:
+        httpGet:
+            path: /actuator/health
+            port: 8080
+        initialDelaySeconds: 60
+        periodSeconds: 20
   type: NodePort # Mantenemos NodePort para fácil acceso en Minikube

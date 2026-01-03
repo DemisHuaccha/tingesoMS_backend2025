@@ -59,4 +59,16 @@ spec:
   ports:
   - port: 8761       # Puerto que usarán los otros servicios (ej: http://eureka-service:8761)
     targetPort: 8761 # Puerto físico dentro del contenedor (si el log dice 8080, cambia esto a 8080)
+    readinessProbe:
+        httpGet:
+            path: /actuator/health
+            port: 8080
+        initialDelaySeconds: 40 # Dale tiempo a Spring para arrancar
+        periodSeconds: 10
+    livenessProbe:
+        httpGet:
+            path: /actuator/health
+            port: 8080
+        initialDelaySeconds: 60
+        periodSeconds: 20
   type: ClusterIP
