@@ -4,8 +4,8 @@ spring:
     name: tingesoMS_inventory
   cloud:
     config:
-      # URL del servidor de configuración ajustada al puerto 8081
-      uri: http://${CONFIG_SERVER_HOST:localhost}:8081
+      # URL del servidor de configuración ajustada al puerto 8888
+      uri: http://${CONFIG_SERVER_HOST:localhost}:8888
       fail-fast: true
       retry:
         initial-interval: 2000
