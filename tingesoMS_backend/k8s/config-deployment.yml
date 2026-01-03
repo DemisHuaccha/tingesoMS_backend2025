@@ -30,15 +30,17 @@ spec:
           httpGet:
             path: /actuator/health
             port: 8888
-          initialDelaySeconds: 40 
-          periodSeconds: 10
+          initialDelaySeconds: 60  
+          periodSeconds: 20        
+          failureThreshold: 5 
         
         livenessProbe:
           httpGet:
             path: /actuator/health
             port: 8888
-          initialDelaySeconds: 60
-          periodSeconds: 20
+          initialDelaySeconds: 120 
+          periodSeconds: 30        
+          failureThreshold: 6
 
         volumeMounts:
         - name: config-volume
