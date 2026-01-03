@@ -19,9 +19,31 @@ spec:
         - containerPort: 8888
         env:
         - name: SPRING_PROFILES_ACTIVE
-          value: native
+          value: "native"
         - name: SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS
-          value: file:///config-data
+          value: "file:///config-data"
+        - name: SERVER_PORT
+          value: "8888"
+        
+        # --- AÑADIDO PARA ESTABILIDAD ---
+        
+        # Readiness Probe: Vital para que Eureka y los demás servicios 
+        # no intenten pedir configuración hasta que este servicio responda.
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8888
+          initialDelaySeconds: 20
+          periodSeconds: 10
+        
+        # Liveness Probe: Reinicia el servicio si el servidor de config se queda "colgado".
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8888
+          initialDelaySeconds: 40
+          periodSeconds: 20
+
         volumeMounts:
         - name: config-volume
           mountPath: /config-data
@@ -29,3 +51,15 @@ spec:
       - name: config-volume
         configMap:
           name: config-repo 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: config-service
+spec:
+  selector:
+    app: config-service
+  ports:
+  - port: 8888
+    targetPort: 8888 # ¡IMPORTANTE! Si el log de esta app dice "Started on 8080", cambia esto a 8080
+  type: ClusterIP

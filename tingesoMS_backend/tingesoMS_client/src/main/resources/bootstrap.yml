@@ -1,9 +1,9 @@
 spring:
   application:
-    name: gateway-service
+    # Debe coincidir exactamente con tingesoMS_client.yaml en tu repo de GitHub
+    name: tingesoMS_client
   cloud:
     config:
-      # Usamos la variable para que funcione en Docker y Local sin cambiar el código
       uri: http://${CONFIG_SERVER_HOST:localhost}:8081
       fail-fast: true
       retry:

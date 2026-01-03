@@ -3,5 +3,11 @@ spring:
     name: eureka-service
   cloud:
     config:
-      enabled: true
-      uri: http://config-service:8081
+      # URL del Config Server que configuramos anteriormente
+      uri: http://${CONFIG_SERVER_HOST:localhost}:8081
+      # Si el Config Server no está disponible, el servicio fallará al arrancar (recomendado)
+      fail-fast: true
+      # Reintentos en caso de que el Config Server esté tardando en subir
+      retry:
+        initial-interval: 2000
+        max-attempts: 5

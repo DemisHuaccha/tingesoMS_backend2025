@@ -2,48 +2,40 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: mysql-config
-  # ConfigMap para guardar datos de configuración no sensibles
 data:
-  host: mysql-service.default.svc.cluster.local
+  # Usamos el nombre corto del servicio, es más limpio y estándar
+  host: mysql-service
+  port: "3306"
 
 ---
 apiVersion: v1
 kind: Secret
 metadata:
   name: mysql-secrets
-  # Secret para guardar datos sensibles como contraseñas codificadas
 type: Opaque
 data:
-  # data requiere que los valores estén codificados en Base64
-  # ROOT (cm9vdA== -> root)
-  username: cm9vdA==
-  password: cm9vdA==
+  # Credenciales Base64 corregidas y organizadas
+  username: cm9vdA==            # root
+  password: cm9vdA==            # root
   
-  # Auth Service (user_auth / auth_pass_2025)
-  user_auth: dXNlcl9hdXRo
+  user_auth: dXNlcl9hdXRo       # user_auth
   pass_auth: YXV0aF9wYXNzXzIwMjU=
   
-  # Client Service (user_client / client_pass_2025)
   user_client: dXNlcl9jbGllbnQ=
   pass_client: Y2xpZW50X3Bhc3NfMjAyNQ==
   
-  # Loan Service (user_loan / loan_pass_2025)
   user_loan: dXNlcl9sb2Fu
   pass_loan: bG9hbl9wYXNzXzIwMjU=
   
-  # Fee Service (user_fee / fee_pass_2025)
   user_fee: dXNlcl9mZWU=
   pass_fee: ZmVlX3Bhc3NfMjAyNQ==
   
-  # Inventory Service (user_inventory / inv_pass_2025)
   user_inventory: dXNlcl9pbnZlbnRvcnk=
   pass_inventory: aW52X3Bhc3NfMjAyNQ==
   
-  # Kardex Service (user_kardex / kardex_pass_2025)
   user_kardex: dXNlcl9rYXJkZXg=
   pass_kardex: a2FyZGV4X3Bhc3NfMjAyNQ==
   
-  # Report Service (user_report / report_pass_2025)
   user_report: dXNlcl9yZXBvcnQ=
   pass_report: cmVwb3J0X3Bhc3NfMjAyNQ==
 
@@ -51,71 +43,82 @@ data:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: mysql-pvc
-  # Solicitud de almacenamiento persistente para que los datos no se pierdan al reiniciar el pod
+  name: mysql-pv-claim
 spec:
   accessModes:
-    - ReadWriteOnce # Solo un nodo puede montar este volumen en modo lectura/escritura
+    - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi # Tamaño del disco solicitado
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: mysql-deployment
-  # Deployment que gestiona la creación y escalado de los Pods de MySQL
-spec:
-  selector:
-    matchLabels:
-      app: mysql # Selecciona los pods con la etiqueta 'app: mysql'
-  template:
-    metadata:
-      labels:
-        app: mysql
-    spec:
-      containers:
-      - name: mysql
-        image: mysql:8.0 # Imagen oficial de MySQL versión 8.0
-        env:
-        - name: MYSQL_ROOT_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: mysql-secrets # Obtiene la contraseña del Secret creado arriba
-              key: password
-        - name: MYSQL_DATABASE
-          value: tingeso_db # Nombre de la base de datos a crear al inicio
-        ports:
-        - containerPort: 3306 # Puerto interno del contenedor
-        livenessProbe:
-          exec:
-            command: ["mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$(MYSQL_ROOT_PASSWORD)"]
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        volumeMounts:
-        - name: mysql-storage
-          mountPath: /var/lib/mysql # Ruta donde MySQL guarda sus datos dentro del contenedor
-        - name: mysql-init-volume
-          mountPath: /docker-entrypoint-initdb.d # Script de inicialización
-      volumes:
-      - name: mysql-storage
-        persistentVolumeClaim:
-          claimName: mysql-pvc # Conecta el volumen lógico con el disco persistente solicitado (PVC)
-      - name: mysql-init-volume
-        configMap:
-          name: mysql-init-script
+      storage: 1Gi
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: mysql-service
-  # Servicio que expone la base de datos a otros pods dentro del clúster
+  name: mysql-service # Este nombre debe coincidir con el 'host' del ConfigMap
+spec:
+  ports:
+    - port: 3306
+      targetPort: 3306
+  selector:
+    app: mysql-db
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-db
 spec:
   selector:
-    app: mysql # Redirige el tráfico a los pods con esta etiqueta
-  ports:
-    - port: 3306 # Puerto expuesto por el servicio
-      targetPort: 3306 # Puerto al que apunta en el contenedor
-  type: ClusterIP # Tipo por defecto: solo accesible desde dentro del clúster
+    matchLabels:
+      app: mysql-db
+  strategy:
+    type: Recreate # Importante para evitar que dos pods intenten usar el mismo volumen a la vez
+  template:
+    metadata:
+      labels:
+        app: mysql-db
+    spec:
+      containers:
+        - image: mysql:8.0.44 # Usamos una versión específica para mayor estabilidad
+          name: mysql-db
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secrets
+                  key: password
+            - name: MYSQL_DATABASE
+              # Cambiado a 'tingeso_db' para que coincida con lo que buscan los microservicios
+              value: "tingeso_db"
+          ports:
+            - containerPort: 3306
+              name: mysql
+          volumeMounts:
+            - name: mysql-init-script
+              mountPath: /docker-entrypoint-initdb.d
+            - name: mysql-persistent-storage
+              mountPath: /var/lib/mysql
+          
+          # Liveness Probe: Reinicia si el motor falla
+          livenessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "localhost"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          
+          # Readiness Probe: NO permite tráfico hasta que MySQL esté listo
+          readinessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "localhost"]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+
+      volumes:
+        - name: mysql-init-script
+          configMap:
+            name: mysql-init-script
+        - name: mysql-persistent-storage
+          persistentVolumeClaim:
+            claimName: mysql-pv-claim

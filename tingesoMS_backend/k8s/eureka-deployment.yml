@@ -16,10 +16,37 @@ spec:
         image: demishuaccha/eureka-service:latest
         imagePullPolicy: Always
         ports:
-        - containerPort: 8761
+        - containerPort: 8761 # Puerto donde la app debería escuchar
         env:
+        - name: SERVER_PORT
+          value: "8761"
         - name: SPRING_CONFIG_IMPORT
           value: "optional:configserver:http://config-service.default.svc.cluster.local:8888"
+        
+        # MODO STANDALONE: Evita errores de autoregistro en los logs
+        - name: EUREKA_CLIENT_REGISTER_WITH_EUREKA
+          value: "false"
+        - name: EUREKA_CLIENT_FETCH_REGISTRY
+          value: "false"
+        
+        # HOSTNAME: Ayuda a que los clientes lo encuentren por DNS interno
+        - name: EUREKA_INSTANCE_HOSTNAME
+          value: "eureka-service"
+
+        # --- PROBES (SONDAS DE SALUD) ---
+        # Si tu app arranca en 8080 (mira tus logs), cambia el port aquí abajo a 8080
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8761
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8761
+          initialDelaySeconds: 60
+          periodSeconds: 20
 
 ---
 apiVersion: v1
@@ -30,6 +57,6 @@ spec:
   selector:
     app: eureka-service
   ports:
-  - port: 8761
-    targetPort: 8761
+  - port: 8761       # Puerto que usarán los otros servicios (ej: http://eureka-service:8761)
+    targetPort: 8761 # Puerto físico dentro del contenedor (si el log dice 8080, cambia esto a 8080)
   type: ClusterIP

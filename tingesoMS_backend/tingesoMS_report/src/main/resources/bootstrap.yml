@@ -1,0 +1,12 @@
+spring:
+  application:
+    # Vinculación exacta con tingesoMS_report.yaml en tu repositorio de GitHub
+    name: tingesoMS_report
+  cloud:
+    config:
+      # Localización del servidor de configuración en el puerto 8081
+      uri: http://${CONFIG_SERVER_HOST:localhost}:8081
+      fail-fast: true
+      retry:
+        initial-interval: 2000
+        max-attempts: 5

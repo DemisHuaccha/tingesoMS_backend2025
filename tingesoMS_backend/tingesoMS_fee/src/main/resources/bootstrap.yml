@@ -1,0 +1,12 @@
+spring:
+  application:
+    # Nombre exacto para vincular con tingesoMS_fee.yaml en GitHub
+    name: tingesoMS_fee
+  cloud:
+    config:
+      # Conexión al Config Server en el puerto 8081
+      uri: http://${CONFIG_SERVER_HOST:localhost}:8081
+      fail-fast: true
+      retry:
+        initial-interval: 2000
+        max-attempts: 5

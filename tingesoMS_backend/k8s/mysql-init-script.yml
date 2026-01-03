@@ -3,39 +3,49 @@ kind: ConfigMap
 metadata:
   name: mysql-init-script
 data:
-  init.sql: |
-    -- Crear base de datos si no existe
-    CREATE DATABASE IF NOT EXISTS tingeso_db;
-    USE tingeso_db;
+  init.sh: |
+    #!/bin/bash
+    set -e
 
-    -- Crear usuarios y asignar privilegios
-    
-    -- Auth Service
-    CREATE USER IF NOT EXISTS 'user_auth'@'%' IDENTIFIED BY 'auth_pass_2025';
-    GRANT ALL PRIVILEGES ON tingeso_db.* TO 'user_auth'@'%';
+    echo "Cargando configuración inicial de usuarios y bases de datos..."
 
-    -- Client Service
-    CREATE USER IF NOT EXISTS 'user_client'@'%' IDENTIFIED BY 'client_pass_2025';
-    GRANT ALL PRIVILEGES ON tingeso_db.* TO 'user_client'@'%';
+    # Usamos la variable MYSQL_ROOT_PASSWORD que definimos en el Deployment
+    mysql -u root -p"$MYSQL_ROOT_PASSWORD" <<-EOSQL
+        -- 1. Auth Service
+        CREATE DATABASE IF NOT EXISTS auth_db;
+        CREATE USER IF NOT EXISTS 'user_auth'@'%' IDENTIFIED BY '$pass_auth';
+        GRANT ALL PRIVILEGES ON auth_db.* TO 'user_auth'@'%';
 
-    -- Loan Service
-    CREATE USER IF NOT EXISTS 'user_loan'@'%' IDENTIFIED BY 'loan_pass_2025';
-    GRANT ALL PRIVILEGES ON tingeso_db.* TO 'user_loan'@'%';
+        -- 2. Client Service
+        CREATE DATABASE IF NOT EXISTS client_db;
+        CREATE USER IF NOT EXISTS 'user_client'@'%' IDENTIFIED BY '$pass_client';
+        GRANT ALL PRIVILEGES ON client_db.* TO 'user_client'@'%';
 
-    -- Fee Service
-    CREATE USER IF NOT EXISTS 'user_fee'@'%' IDENTIFIED BY 'fee_pass_2025';
-    GRANT ALL PRIVILEGES ON tingeso_db.* TO 'user_fee'@'%';
+        -- 3. Fee Service
+        CREATE DATABASE IF NOT EXISTS fee_db;
+        CREATE USER IF NOT EXISTS 'user_fee'@'%' IDENTIFIED BY '$pass_fee';
+        GRANT ALL PRIVILEGES ON fee_db.* TO 'user_fee'@'%';
 
-    -- Inventory Service
-    CREATE USER IF NOT EXISTS 'user_inventory'@'%' IDENTIFIED BY 'inv_pass_2025';
-    GRANT ALL PRIVILEGES ON tingeso_db.* TO 'user_inventory'@'%';
+        -- 4. Inventory Service
+        CREATE DATABASE IF NOT EXISTS inventory_db;
+        CREATE USER IF NOT EXISTS 'user_inventory'@'%' IDENTIFIED BY '$pass_inventory';
+        GRANT ALL PRIVILEGES ON inventory_db.* TO 'user_inventory'@'%';
 
-    -- Kardex Service
-    CREATE USER IF NOT EXISTS 'user_kardex'@'%' IDENTIFIED BY 'kardex_pass_2025';
-    GRANT ALL PRIVILEGES ON tingeso_db.* TO 'user_kardex'@'%';
+        -- 5. Kardex Service
+        CREATE DATABASE IF NOT EXISTS kardex_db;
+        CREATE USER IF NOT EXISTS 'user_kardex'@'%' IDENTIFIED BY '$pass_kardex';
+        GRANT ALL PRIVILEGES ON kardex_db.* TO 'user_kardex'@'%';
 
-    -- Report Service
-    CREATE USER IF NOT EXISTS 'user_report'@'%' IDENTIFIED BY 'report_pass_2025';
-    GRANT ALL PRIVILEGES ON tingeso_db.* TO 'user_report'@'%';
+        -- 6. Loan Service
+        CREATE DATABASE IF NOT EXISTS loan_db;
+        CREATE USER IF NOT EXISTS 'user_loan'@'%' IDENTIFIED BY '$pass_loan';
+        GRANT ALL PRIVILEGES ON loan_db.* TO 'user_loan'@'%';
 
-    FLUSH PRIVILEGES;
+        -- 7. Report Service
+        CREATE DATABASE IF NOT EXISTS report_db;
+        CREATE USER IF NOT EXISTS 'user_report'@'%' IDENTIFIED BY '$pass_report';
+        GRANT ALL PRIVILEGES ON report_db.* TO 'user_report'@'%';
+
+        FLUSH PRIVILEGES;
+    EOSQL
+    echo "¡Inicialización completada con éxito!"

@@ -11,10 +11,11 @@ spec:
       labels:
         app: tingeso-auth
     spec:
-      initContainers:
+      initContainers: 
       - name: wait-for-mysql
         image: busybox
-        command: ['sh', '-c', 'until nc -z -v -w30 mysql-service.default.svc.cluster.local 3306; do echo "Waiting for MySQL..."; sleep 5; done;']
+        # CORRECCIÓN: Usamos 'mysql-service' que es el nombre del Service de K8s
+        command: ['sh', '-c', 'until nc -z -v -w30 mysql-service 3306; do echo "Waiting for MySQL..."; sleep 5; done;']
       containers:
       - name: tingeso-auth
         image: demishuaccha/tingeso-auth-service:latest
@@ -22,27 +23,45 @@ spec:
         ports:
         - containerPort: 8080
         env:
+        - name: SERVER_PORT
+          value: "8080"
         - name: SPRING_CONFIG_IMPORT
           value: "optional:configserver:http://config-service.default.svc.cluster.local:8888"
-        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
-          value: "http://eureka-service.default.svc.cluster.local:8761/eureka/"
-        - name: MYSQL_HOST
-          valueFrom:
-            configMapKeyRef:
-              name: mysql-config
-              key: host
-        - name: DB_USERNAME
+        
+        # 1. URL DE LA BASE DE DATOS
+        # Apuntamos al servicio de MySQL y a la base de datos creada en el init script
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:mysql://mysql-service:3306/auth_db"
+
+        # 2. CREDENCIALES ESTÁNDAR (Para evitar fallos si el Config Server tarda)
+        - name: SPRING_DATASOURCE_USERNAME
           valueFrom:
             secretKeyRef:
               name: mysql-secrets
               key: user_auth
-        - name: DB_PASSWORD
+        - name: SPRING_DATASOURCE_PASSWORD
           valueFrom:
             secretKeyRef:
               name: mysql-secrets
               key: pass_auth
-        - name: SPRING_DATASOURCE_URL
-          value: jdbc:mysql://${MYSQL_HOST}:3306/tingeso_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
+        
+        # 3. REGISTRO EN EUREKA
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: "http://eureka-service:8761/eureka/"
+
+        # 4. PROBES PARA ESTABILIDAD
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 20
 
 ---
 apiVersion: v1

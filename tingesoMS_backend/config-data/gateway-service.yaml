@@ -1,45 +1,52 @@
 server:
   port: 8080
+
+eureka:
+  client:
+    fetch-registry: true
+    register-with-eureka: true
+    service-url:
+      defaultZone: http://${EUREKA_HOST:eureka-service}:8761/eureka/
+  instance:
+    # Es recomendable usar el nombre del servicio o IP en lugar de localhost
+    # para que Eureka sepa cómo redirigir el tráfico al gateway
+    instance-id: ${spring.application.name}:${random.value}
+    prefer-ip-address: true
+
 spring:
-  application:
-    name: gateway-service
   cloud:
     gateway:
       discovery:
         locator:
           enabled: true
+          # Esto permite que el gateway sea sensible a minúsculas/mayúsculas según el registro
+          lower-case-service-id: true 
       routes:
-        - id: tingesoMS_auth
-          uri: lb://tingesoMS_auth
+        - id: auth-service
+          uri: lb://auth-service
           predicates:
-            - Path=/api/auth/**
-        - id: tingesoMS_client
-          uri: lb://tingesoMS_client
+            - Path=/auth/**
+        - id: client-service
+          uri: lb://client-service
           predicates:
-            - Path=/api/client/**
-        - id: tingesoMS_inventory
-          uri: lb://tingesoMS_inventory
+            - Path=/client/**
+        - id: fee-service
+          uri: lb://fee-service
           predicates:
-            - Path=/api/tool/**
-        - id: tingesoMS_fee
-          uri: lb://tingesoMS_fee
+            - Path=/fee/**
+        - id: inventory-service
+          uri: lb://inventory-service
           predicates:
-            - Path=/api/fee/**
-        - id: tingesoMS_loan
-          uri: lb://tingesoMS_loan
+            - Path=/inventory/**
+        - id: kardex-service
+          uri: lb://kardex-service
           predicates:
-            - Path=/api/loan/**
-        - id: tingesoMS_kardex
-          uri: lb://tingesoMS_kardex
+            - Path=/kardex/**
+        - id: loan-service
+          uri: lb://loan-service
           predicates:
-            - Path=/api/cardex/**
-        - id: tingesoMS_report
-          uri: lb://tingesoMS_report
+            - Path=/loan/**
+        - id: report-service
+          uri: lb://report-service
           predicates:
-            - Path=/api/reports/**
-eureka:
-  client:
-    register-with-eureka: true
-    fetch-registry: true
-    service-url:
-      default-zone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
+            - Path=/report/**

@@ -15,24 +15,39 @@ spec:
       containers:
       - name: tingeso-auth
         image: tingeso-auth-service:latest
-        imagePullPolicy: Never
+        imagePullPolicy: Never # Útil si usas Minikube o imágenes locales
+        ports:
+          - containerPort: 0 # O el puerto que use tu app (usamos 0 para dinámico)
         env:
-        - name: SPRING_CONFIG_IMPORT
-          value: "optional:configserver:http://config-service:8888"
-        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
-          value: "http://eureka-service:8761/eureka/"
-        - name: MYSQL_HOST
-          valueFrom:
-            configMapKeyRef:
-              name: mysql-config
-              key: host
-        - name: DB_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: mysql-secrets
-              key: username
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: mysql-secrets
-              key: password
+          # 1. Indicamos el nombre de la aplicación para que Config Server la reconozca
+          - name: SPRING_APPLICATION_NAME
+            value: "tingesoMS_auth"
+          
+          # 2. Corregimos el puerto al 8081 (que definimos en el Config Server)
+          - name: CONFIG_SERVER_HOST
+            value: "config-service"
+          
+          # 3. Si usas la propiedad moderna de Spring Boot para importar config:
+          - name: SPRING_CONFIG_IMPORT
+            value: "optional:configserver:http://config-service:8081"
+          
+          # 4. URL de Eureka
+          - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+            value: "http://eureka-service:8761/eureka/"
+
+          # 5. Configuración de Base de Datos (Correcta según tu original)
+          - name: MYSQL_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: mysql-config
+                key: host
+          - name: DB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: mysql-secrets
+                key: username
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mysql-secrets
+                key: password

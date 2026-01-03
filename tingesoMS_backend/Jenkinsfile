@@ -41,6 +41,14 @@ pipeline {
             steps {
                 script {
                     def k8sDir = "${env.BASE_DIR}/k8s" 
+                    def configDir = "${env.BASE_DIR}/config-data"
+
+                    echo "Asegurando ConfigMap 'config-repo'..."
+                    if (isUnix()) {
+                        sh "kubectl create configmap config-repo --from-file=${configDir} --dry-run=client -o yaml | kubectl apply -f -"
+                    } else {
+                        bat "kubectl create configmap config-repo --from-file=${configDir} --dry-run=client -o yaml | kubectl apply -f -"
+                    }
                     
                     // --- AJUSTE PARA LIMPIAR DESORDEN ---
                     echo "Limpiando pods duplicados o trabados antes de aplicar cambios..."

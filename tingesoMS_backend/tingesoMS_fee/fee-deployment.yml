@@ -17,22 +17,34 @@ spec:
         image: tingeso-fee-service:latest
         imagePullPolicy: Never
         env:
-        - name: SPRING_CONFIG_IMPORT
-          value: "optional:configserver:http://config-service:8888"
-        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
-          value: "http://eureka-service:8761/eureka/"
-        - name: MYSQL_HOST
-          valueFrom:
-            configMapKeyRef:
-              name: mysql-config
-              key: host
-        - name: DB_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: mysql-secrets
-              key: username
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: mysql-secrets
-              key: password
+          # Identidad del servicio
+          - name: SPRING_APPLICATION_NAME
+            value: "tingesoMS_fee"
+          
+          # Host para resolver la URL del bootstrap
+          - name: CONFIG_SERVER_HOST
+            value: "config-service"
+
+          # Puerto 8081 (Config Server)
+          - name: SPRING_CONFIG_IMPORT
+            value: "optional:configserver:http://config-service:8081"
+
+          - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+            value: "http://eureka-service:8761/eureka/"
+
+          # Configuración de base de datos desde infraestructura
+          - name: MYSQL_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: mysql-config
+                key: host
+          - name: DB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: mysql-secrets
+                key: username
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mysql-secrets
+                key: password

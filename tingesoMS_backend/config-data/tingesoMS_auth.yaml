@@ -1,8 +1,12 @@
 server:
-  port: ${PORT:0}
+  # Permite tomar PORT (común en despliegues) o SERVER_PORT. Si no, usa puerto dinámico (0).
+  port: ${PORT:${SERVER_PORT:0}}
+
 spring:
+  application:
+    name: tingesoMS_auth
   datasource:
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/tingeso_auth_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/auth_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:root}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -10,9 +14,17 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
 eureka:
   client:
     fetch-registry: true
     register-with-eureka: true
     service-url:
-      default-zone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
+      defaultZone: http://${EUREKA_HOST:eureka-service}:8761/eureka/
+  instance:
+    # Identificador único para Eureka, útil si escalas varias instancias del mismo servicio
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+    prefer-ip-address: true

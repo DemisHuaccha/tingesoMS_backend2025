@@ -17,22 +17,34 @@ spec:
         image: tingeso-kardex-service:latest
         imagePullPolicy: Never
         env:
-        - name: SPRING_CONFIG_IMPORT
-          value: "optional:configserver:http://config-service:8888"
-        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
-          value: "http://eureka-service:8761/eureka/"
-        - name: MYSQL_HOST
-          valueFrom:
-            configMapKeyRef:
-              name: mysql-config
-              key: host
-        - name: DB_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: mysql-secrets
-              key: username
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: mysql-secrets
-              key: password
+          # Identidad para el registro en Eureka y Config Server
+          - name: SPRING_APPLICATION_NAME
+            value: "tingesoMS_kardex"
+          
+          # Nombre del servicio de configuración en la red de K8s
+          - name: CONFIG_SERVER_HOST
+            value: "config-service"
+
+          # Corrección de puerto 8888 a 8081
+          - name: SPRING_CONFIG_IMPORT
+            value: "optional:configserver:http://config-service:8081"
+
+          - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+            value: "http://eureka-service:8761/eureka/"
+
+          # Referencias a base de datos
+          - name: MYSQL_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: mysql-config
+                key: host
+          - name: DB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: mysql-secrets
+                key: username
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mysql-secrets
+                key: password

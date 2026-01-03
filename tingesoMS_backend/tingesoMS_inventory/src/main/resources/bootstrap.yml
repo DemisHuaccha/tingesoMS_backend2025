@@ -1,0 +1,12 @@
+spring:
+  application:
+    # Vincula este microservicio con tingesoMS_inventory.yaml en el Config Server
+    name: tingesoMS_inventory
+  cloud:
+    config:
+      # URL del servidor de configuración ajustada al puerto 8081
+      uri: http://${CONFIG_SERVER_HOST:localhost}:8081
+      fail-fast: true
+      retry:
+        initial-interval: 2000
+        max-attempts: 5
