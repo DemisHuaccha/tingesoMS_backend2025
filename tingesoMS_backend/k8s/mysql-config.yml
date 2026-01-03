@@ -5,4 +5,3 @@ metadata:
 data:
   host: mysql-service
   port: "3306"
-  database: tingeso_db

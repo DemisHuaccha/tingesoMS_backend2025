@@ -1,3 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service
+spec:
+  ports:
+    - port: 3306
+      targetPort: 3306
+  selector:
+    app: mysql-db
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pv-claim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,7 +29,7 @@ spec:
     matchLabels:
       app: mysql-db
   strategy:
-    type: Recreate
+    type: Recreate # Importante para bases de datos para evitar bloqueos de volumen
   template:
     metadata:
       labels:
@@ -22,23 +44,41 @@ spec:
                 secretKeyRef:
                   name: mysql-secrets
                   key: password
-            # Inyección de variables para el script init.sh
+            # Variables para Auth
             - name: user_auth
               valueFrom: { secretKeyRef: { name: mysql-secrets, key: user_auth } }
             - name: pass_auth
               valueFrom: { secretKeyRef: { name: mysql-secrets, key: pass_auth } }
+            # Variables para Client
             - name: user_client
               valueFrom: { secretKeyRef: { name: mysql-secrets, key: user_client } }
             - name: pass_client
               valueFrom: { secretKeyRef: { name: mysql-secrets, key: pass_client } }
+            # Variables para Fee
             - name: user_fee
               valueFrom: { secretKeyRef: { name: mysql-secrets, key: user_fee } }
             - name: pass_fee
               valueFrom: { secretKeyRef: { name: mysql-secrets, key: pass_fee } }
+            # Variables para Loan
             - name: user_loan
               valueFrom: { secretKeyRef: { name: mysql-secrets, key: user_loan } }
             - name: pass_loan
               valueFrom: { secretKeyRef: { name: mysql-secrets, key: pass_loan } }
+            # Variables para Inventory
+            - name: user_inventory
+              valueFrom: { secretKeyRef: { name: mysql-secrets, key: user_inventory } }
+            - name: pass_inventory
+              valueFrom: { secretKeyRef: { name: mysql-secrets, key: pass_inventory } }
+            # Variables para Kardex
+            - name: user_kardex
+              valueFrom: { secretKeyRef: { name: mysql-secrets, key: user_kardex } }
+            - name: pass_kardex
+              valueFrom: { secretKeyRef: { name: mysql-secrets, key: pass_kardex } }
+            # Variables para Report
+            - name: user_report
+              valueFrom: { secretKeyRef: { name: mysql-secrets, key: user_report } }
+            - name: pass_report
+              valueFrom: { secretKeyRef: { name: mysql-secrets, key: pass_report } }
           ports:
             - containerPort: 3306
               name: mysql
@@ -51,7 +91,7 @@ spec:
         - name: mysql-init-script
           configMap:
             name: mysql-init-script
-            defaultMode: 0755 # Permisos de ejecución
+            defaultMode: 0755 # Permite que MySQL ejecute el script
         - name: mysql-persistent-storage
           persistentVolumeClaim:
             claimName: mysql-pv-claim
