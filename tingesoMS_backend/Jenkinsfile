@@ -5,6 +5,8 @@ pipeline {
         DOCKER_HUB_REPO = 'demishuaccha'
         DOCKER_CREDENTIAL_ID = 'dockerhub-creds'
         BASE_DIR = 'tingesoMS_backend'
+        // Definimos la ruta del Kubeconfig para evitar problemas de IP
+        KUBECONFIG = 'C:/Users/demis/.kube/config' 
     }
 
     stages {
@@ -12,17 +14,15 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: env.DOCKER_CREDENTIAL_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                        if (isUnix()) {
-                            sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-                        } else {
-                            bat 'echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin'
-                        }
+                        // En Windows, a veces el pipe de password-stdin da problemas, usamos login directo
+                        bat "docker login -u %DOCKER_USER% -p %DOCKER_PASS%"
                     }
                 }
             }
         }
 
         stage('Build and Push Microservices') {
+            // Nota: Si tu PC se pone muy lenta, cambia 'parallel' por etapas secuenciales
             parallel {
                 stage('Config Service') { steps { buildAndPush('config-service', 'config-service') } }
                 stage('Eureka Service') { steps { buildAndPush('eureka-service', 'eureka-service') } }
@@ -40,34 +40,31 @@ pipeline {
         stage('Deploy to K8s') {
             steps {
                 script {
-                    def k8sDir = "${env.BASE_DIR}/k8s" 
-                    def configDir = "${env.BASE_DIR}/config-data"
+                    // 1. ConfigMap (Idempotente)
+                    bat "kubectl create configmap config-repo --from-file=${env.BASE_DIR}/config-data --dry-run=client -o yaml | kubectl apply -f -"
 
-                    echo "Asegurando ConfigMap 'config-repo'..."
-                    if (isUnix()) {
-                        sh "kubectl create configmap config-repo --from-file=${configDir} --dry-run=client -o yaml | kubectl apply -f -"
-                    } else {
-                        bat "kubectl create configmap config-repo --from-file=${configDir} --dry-run=client -o yaml | kubectl apply -f -"
-                    }
+                    // 2. Base de Datos (Infraestructura)
+                    bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-pv.yml"
+                    bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-deployment.yml"
                     
-                    // --- AJUSTE PARA LIMPIAR DESORDEN ---
-                    echo "Limpiando pods duplicados o trabados antes de aplicar cambios..."
-                    if (isUnix()) {
-                        sh "kubectl delete pods --field-selector=status.phase=Pending"
-                        sh "kubectl apply -f ${k8sDir}/ --validate=false"
-                    } else {
-                        bat "kubectl delete pods --field-selector=status.phase=Pending"
-                        bat "kubectl apply -f ${k8sDir}/ --validate=false"
-                    }
+                    echo "Esperando a MySQL..."
+                    bat "kubectl wait --for=condition=ready pod -l app=mysql-db --timeout=90s"
                     
-                    // Reinicia los deployments para que tomen la nueva imagen
-                    def deployments = "config-service eureka-service gateway-service tingeso-auth tingeso-client tingeso-fee tingeso-inventory tingeso-kardex tingeso-loan tingeso-report"
+                    // 3. Config Service (El que corregiste)
+                    bat "kubectl apply -f ${env.BASE_DIR}/k8s/config-deployment.yml"
                     
-                    if (isUnix()) {
-                        sh "kubectl rollout restart deployment ${deployments}"
-                    } else {
-                        bat "kubectl rollout restart deployment ${deployments}"
-                    }
+                    echo "Esperando a Config Service (Cerebro)..."
+                    // Esperamos a que el POD esté listo antes de seguir con Eureka
+                    bat "kubectl wait --for=condition=ready pod -l app=config-service --timeout=120s"
+                    
+                    // 4. Eureka (Discovery)
+                    bat "kubectl apply -f ${env.BASE_DIR}/k8s/eureka-deployment.yml"
+                    echo "Esperando a Eureka..."
+                    bat "kubectl wait --for=condition=ready pod -l app=eureka-service --timeout=120s"
+                    
+                    // 5. El resto de los servicios (Aplicamos toda la carpeta)
+                    echo "Desplegando el resto de microservicios..."
+                    bat "kubectl apply -f ${env.BASE_DIR}/k8s/"
                 }
             }
         }
@@ -77,11 +74,14 @@ pipeline {
         always {
             script {
                 try {
-                    if (isUnix()) { sh 'docker logout' } else { bat 'docker logout' }
+                    bat 'docker logout'
                 } catch (Exception e) {
-                    echo "Logout failed or already logged out"
+                    echo "Logout ya realizado o fallido"
                 }
             }
+        }
+        success {
+            echo "¡Despliegue exitoso en Minikube!"
         }
     }
 }
@@ -96,6 +96,7 @@ def buildAndPush(folderName, imageName) {
             bat "mvn clean package -DskipTests" 
             echo "Empaquetando imagen Docker..."
             bat "docker build -t ${fullName} ."
+            echo "Subiendo a Docker Hub..."
             bat "docker push ${fullName}"
         }
     }
