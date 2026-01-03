@@ -9,19 +9,6 @@ spec:
   selector:
     app: mysql-db
 ---
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: mysql-pv-claim
-spec:
-  storageClassName: ""
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
-  # Dejamos que Kubernetes lo vincule automáticamente al PV disponible
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -31,7 +18,7 @@ spec:
     matchLabels:
       app: mysql-db
   strategy:
-    type: Recreate # Evita que dos pods intenten usar el mismo volumen a la vez
+    type: Recreate # Crucial: Cierra el pod viejo antes de abrir el nuevo para soltar el disco
   template:
     metadata:
       labels:
@@ -43,7 +30,8 @@ spec:
           env:
             - name: MYSQL_ROOT_PASSWORD
               valueFrom: { secretKeyRef: { name: mysql-secrets, key: password } }
-            # Inyección de usuarios para el script init.sh
+            
+            # Variables para el script de inicialización (init.sh)
             - name: user_auth
               valueFrom: { secretKeyRef: { name: mysql-secrets, key: user_auth } }
             - name: pass_auth

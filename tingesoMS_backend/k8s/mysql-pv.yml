@@ -1,13 +1,24 @@
+# mysql-pv.yml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mysql-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/data/mysql"
+---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: mysql-pv-claim  # Este nombre debe coincidir EXACTAMENTE con el del Deployment
+  name: mysql-pv-claim
 spec:
+  storageClassName: ""
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
       storage: 1Gi
-  # Esto es opcional en Minikube, pero asegura que busque tu PV manual
-  storageClassName: "" 
-  volumeName: mysql-pv
