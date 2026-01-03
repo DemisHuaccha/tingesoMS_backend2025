@@ -19,6 +19,7 @@ spec:
   resources:
     requests:
       storage: 1Gi
+  # No definimos storageClassName ni volumeName para evitar errores de inmutabilidad
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -29,7 +30,7 @@ spec:
     matchLabels:
       app: mysql-db
   strategy:
-    type: Recreate # Importante para bases de datos para evitar bloqueos de volumen
+    type: Recreate
   template:
     metadata:
       labels:
@@ -40,41 +41,31 @@ spec:
           name: mysql-db
           env:
             - name: MYSQL_ROOT_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: mysql-secrets
-                  key: password
-            # Variables para Auth
+              valueFrom: { secretKeyRef: { name: mysql-secrets, key: password } }
             - name: user_auth
               valueFrom: { secretKeyRef: { name: mysql-secrets, key: user_auth } }
             - name: pass_auth
               valueFrom: { secretKeyRef: { name: mysql-secrets, key: pass_auth } }
-            # Variables para Client
             - name: user_client
               valueFrom: { secretKeyRef: { name: mysql-secrets, key: user_client } }
             - name: pass_client
               valueFrom: { secretKeyRef: { name: mysql-secrets, key: pass_client } }
-            # Variables para Fee
             - name: user_fee
               valueFrom: { secretKeyRef: { name: mysql-secrets, key: user_fee } }
             - name: pass_fee
               valueFrom: { secretKeyRef: { name: mysql-secrets, key: pass_fee } }
-            # Variables para Loan
             - name: user_loan
               valueFrom: { secretKeyRef: { name: mysql-secrets, key: user_loan } }
             - name: pass_loan
               valueFrom: { secretKeyRef: { name: mysql-secrets, key: pass_loan } }
-            # Variables para Inventory
             - name: user_inventory
               valueFrom: { secretKeyRef: { name: mysql-secrets, key: user_inventory } }
             - name: pass_inventory
               valueFrom: { secretKeyRef: { name: mysql-secrets, key: pass_inventory } }
-            # Variables para Kardex
             - name: user_kardex
               valueFrom: { secretKeyRef: { name: mysql-secrets, key: user_kardex } }
             - name: pass_kardex
               valueFrom: { secretKeyRef: { name: mysql-secrets, key: pass_kardex } }
-            # Variables para Report
             - name: user_report
               valueFrom: { secretKeyRef: { name: mysql-secrets, key: user_report } }
             - name: pass_report
@@ -91,7 +82,7 @@ spec:
         - name: mysql-init-script
           configMap:
             name: mysql-init-script
-            defaultMode: 0755 # Permite que MySQL ejecute el script
+            defaultMode: 0755
         - name: mysql-persistent-storage
           persistentVolumeClaim:
             claimName: mysql-pv-claim

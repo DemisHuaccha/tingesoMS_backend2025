@@ -5,16 +5,28 @@ pipeline {
         DOCKER_HUB_REPO = 'demishuaccha'
         DOCKER_CREDENTIAL_ID = 'dockerhub-creds'
         BASE_DIR = 'tingesoMS_backend'
-        // Definimos la ruta del Kubeconfig para evitar problemas de IP
         KUBECONFIG = 'C:/Users/demis/.kube/config' 
     }
 
     stages {
+        stage('Cleanup Environment') {
+            steps {
+                script {
+                    echo "--- LIMPIEZA TOTAL: Borrando recursos previos ---"
+                    // El flag --wait=true es vital para evitar el error de PVC inmutable
+                    bat "kubectl delete all,pvc,pv,configmap,secret --all --ignore-not-found --wait=true"
+                    
+                    echo "--- LIMPIEZA FÍSICA: Borrando datos de MySQL en Minikube ---"
+                    // Esto asegura que el init.sh de MySQL se ejecute de nuevo
+                    bat "minikube ssh \"sudo rm -rf /mnt/data/*\""
+                }
+            }
+        }
+
         stage('Login to Docker Hub') {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: env.DOCKER_CREDENTIAL_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                        // En Windows, a veces el pipe de password-stdin da problemas, usamos login directo
                         bat "docker login -u %DOCKER_USER% -p %DOCKER_PASS%"
                     }
                 }
@@ -22,7 +34,6 @@ pipeline {
         }
 
         stage('Build and Push Microservices') {
-            // Nota: Si tu PC se pone muy lenta, cambia 'parallel' por etapas secuenciales
             parallel {
                 stage('Config Service') { steps { buildAndPush('config-service', 'config-service') } }
                 stage('Eureka Service') { steps { buildAndPush('eureka-service', 'eureka-service') } }
@@ -36,42 +47,37 @@ pipeline {
                 stage('Report Service') { steps { buildAndPush('tingesoMS_report', 'tingeso-report-service') } }
             }
         }
+
         stage('Deploy to K8s') {
             steps {
                 script {
-                    // 1. ConfigMap de la aplicación (Repositorio de configuraciones nativo)
-                    bat "kubectl create configmap config-repo --from-file=${env.BASE_DIR}/config-data --dry-run=client -o yaml | kubectl apply -f -"
-
-                    // 2. Infraestructura de Base de Datos
-                    echo "Aplicando configuración y almacenamiento de MySQL..."
-                    bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-pv.yml"
+                    // 1. Configuración Base (Secrets y ConfigMaps)
+                    echo "Configurando Secretos y ConfigMaps..."
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-secrets.yml"
-                    bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-config.yml"
+                    bat "kubectl create configmap config-repo --from-file=${env.BASE_DIR}/config-data --dry-run=client -o yaml | kubectl apply -f -"
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-init-script.yml"
-                    
-                    // Asegúrate de que mysql-deployment.yml contenga el bloque del PVC
-                    echo "Desplegando MySQL..."
+                    bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-config.yml"
+
+                    // 2. Infraestructura de MySQL (PV + Deployment/Service/PVC)
+                    echo "Levantando MySQL..."
+                    bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-pv.yml"
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-deployment.yml"
                     
-                    echo "Esperando a que MySQL esté READY..."
-                    bat "kubectl wait --for=condition=ready pod -l app=mysql-db --timeout=150s"
+                    echo "Esperando a MySQL (180s)..."
+                    bat "kubectl wait --for=condition=ready pod -l app=mysql-db --timeout=180s"
                     
-                    // 3. Config Service (Depende de MySQL)
+                    // 3. Config Service (Cerebro)
                     echo "Desplegando Config Service..."
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/config-deployment.yml"
+                    bat "kubectl wait --for=condition=ready pod -l app=config-service --timeout=180s"
                     
-                    echo "Esperando a Config Service (Cerebro)..."
-                    bat "kubectl wait --for=condition=ready pod -l app=config-service --timeout=150s"
-                    
-                    // 4. Eureka (Depende de Config Service)
+                    // 4. Eureka (Discovery)
                     echo "Desplegando Eureka..."
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/eureka-deployment.yml"
+                    bat "kubectl wait --for=condition=ready pod -l app=eureka-service --timeout=180s"
                     
-                    echo "Esperando a Eureka (Discovery)..."
-                    bat "kubectl wait --for=condition=ready pod -l app=eureka-service --timeout=150s"
-                    
-                    // 5. Despliegue masivo del resto de microservicios
-                    echo "Desplegando microservicios de negocio y Gateway..."
+                    // 5. Resto de microservicios y Gateway
+                    echo "Desplegando microservicios finales..."
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/"
                 }
             }
@@ -81,16 +87,11 @@ pipeline {
     post {
         always {
             script {
-                try {
-                    bat 'docker logout'
-                } catch (Exception e) {
-                    echo "Logout ya realizado o fallido"
-                }
+                try { bat 'docker logout' } catch (Exception e) { echo "Docker logout omitido" }
             }
         }
-        success {
-            echo "¡Despliegue exitoso en Minikube!"
-        }
+        success { echo "¡Sistema desplegado con éxito en Minikube!" }
+        failure { echo "El despliegue ha fallado. Revisa los logs de Jenkins." }
     }
 }
 
@@ -98,13 +99,9 @@ def buildAndPush(folderName, imageName) {
     script {
         def fullName = "${env.DOCKER_HUB_REPO}/${imageName}:latest"
         def fullPath = "${env.BASE_DIR}/${folderName}"
-        
         dir(fullPath) {
-            echo "Construyendo JAR para ${imageName}..."
             bat "mvn clean package -DskipTests" 
-            echo "Empaquetando imagen Docker..."
             bat "docker build -t ${fullName} ."
-            echo "Subiendo a Docker Hub..."
             bat "docker push ${fullName}"
         }
     }
