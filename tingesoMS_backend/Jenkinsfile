@@ -5,27 +5,14 @@ pipeline {
         DOCKER_HUB_REPO = 'demishuaccha'
         DOCKER_CREDENTIAL_ID = 'dockerhub-creds'
         BASE_DIR = 'tingesoMS_backend'
-        // Ruta absoluta al config para evitar que Jenkins use un contexto vacío
         KUBECONFIG = 'C:/Users/demis/.kube/config' 
     }
 
     stages {
-        stage('Cleanup Environment') {
-            steps {
-                script {
-                    echo "--- LIMPIEZA: Borrando recursos de Kubernetes ---"
-                    // El flag --wait=true es la clave para evitar el error de PVC inmutable
-                    bat "kubectl delete all,pvc,pv,configmap,secret --all --ignore-not-found --wait=true"
-                    
-                    echo "--- NOTA: Limpieza física de Minikube realizada fuera de Jenkins ---"
-                }
-            }
-        }
 
         stage('Login to Docker Hub') {
             steps {
                 script {
-                    // Usamos variables de entorno temporales para el login seguro en Windows
                     withCredentials([usernamePassword(credentialsId: env.DOCKER_CREDENTIAL_ID, usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                         bat "docker login -u %USER% -p %PASS%"
                     }
@@ -51,19 +38,20 @@ pipeline {
         stage('Deploy Infrastructure') {
             steps {
                 script {
-                    // 1. Configuración Base (Secretos y ConfigMaps)
+                    echo "--- Iniciando Despliegue en Clúster Limpio ---"
+                    // Aplicamos Secretos y ConfigMaps
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-secrets.yml"
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-config.yml"
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-init-script.yml"
                     
-                    // Crear ConfigMap dinámico desde carpeta
+                    // ConfigMap para el Config Server (se crea/actualiza)
                     bat "kubectl create configmap config-repo --from-file=${env.BASE_DIR}/config-data --dry-run=client -o yaml | kubectl apply -f -"
 
-                    // 2. MySQL (PV + Deployment)
+                    // MySQL (PV y Deployment)
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-pv.yml"
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-deployment.yml"
                     
-                    echo "Esperando a MySQL (Hasta 3 minutos)..."
+                    echo "Esperando que MySQL esté listo para recibir conexiones..."
                     bat "kubectl wait --for=condition=ready pod -l app=mysql-db --timeout=180s"
                 }
             }
@@ -72,11 +60,10 @@ pipeline {
         stage('Deploy Core Services') {
             steps {
                 script {
-                    // 3. Config Service
+                    echo "--- Desplegando Config Server y Eureka ---"
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/config-deployment.yml"
                     bat "kubectl wait --for=condition=ready pod -l app=config-service --timeout=180s"
                     
-                    // 4. Eureka Service
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/eureka-deployment.yml"
                     bat "kubectl wait --for=condition=ready pod -l app=eureka-service --timeout=180s"
                 }
@@ -86,9 +73,16 @@ pipeline {
         stage('Deploy Business Services') {
             steps {
                 script {
-                    // 5. Despliegue masivo del resto (Gateway y Microservicios)
-                    echo "Desplegando lógica de negocio..."
-                    bat "kubectl apply -f ${env.BASE_DIR}/k8s/"
+                    echo "--- Desplegando Lógica de Negocio y Gateway ---"
+                    // Desplegamos los servicios uno a uno para asegurar el orden
+                    bat "kubectl apply -f ${env.BASE_DIR}/k8s/gateway-deployment.yml"
+                    bat "kubectl apply -f ${env.BASE_DIR}/k8s/auth-deployment.yml"
+                    bat "kubectl apply -f ${env.BASE_DIR}/k8s/client-deployment.yml"
+                    bat "kubectl apply -f ${env.BASE_DIR}/k8s/fee-deployment.yml"
+                    bat "kubectl apply -f ${env.BASE_DIR}/k8s/inventory-deployment.yml"
+                    bat "kubectl apply -f ${env.BASE_DIR}/k8s/kardex-deployment.yml"
+                    bat "kubectl apply -f ${env.BASE_DIR}/k8s/loan-deployment.yml"
+                    bat "kubectl apply -f ${env.BASE_DIR}/k8s/report-deployment.yml"
                 }
             }
         }
@@ -97,16 +91,11 @@ pipeline {
     post {
         always {
             script {
-                try { bat 'docker logout' } catch (Exception e) { echo "Logout finalizado" }
+                try { bat 'docker logout' } catch (Exception e) { echo "Docker logout realizado." }
             }
         }
         success {
-            echo "--------------------------------------------------------"
-            echo "¡DESPLIEGUE EXITOSO! Todos los servicios están en marcha."
-            echo "--------------------------------------------------------"
-        }
-        failure {
-            echo "ERROR: El despliegue falló. Revisa los logs de los Pods."
+            echo "¡DESPLIEGUE FINALIZADO EXITOSAMENTE!"
         }
     }
 }
@@ -116,6 +105,7 @@ def buildAndPush(folderName, imageName) {
         def fullName = "${env.DOCKER_HUB_REPO}/${imageName}:latest"
         def fullPath = "${env.BASE_DIR}/${folderName}"
         dir(fullPath) {
+            echo "Construyendo ${imageName}..."
             bat "mvn clean package -DskipTests" 
             bat "docker build -t ${fullName} ."
             bat "docker push ${fullName}"
