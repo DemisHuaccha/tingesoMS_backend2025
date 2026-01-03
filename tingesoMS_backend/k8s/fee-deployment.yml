@@ -12,10 +12,10 @@ spec:
         app: tingeso-fee
     spec:
       initContainers:
-      - name: wait-for-mysql
+      - name: wait-for-infrastructure
         image: busybox
-        # Corregido: apuntamos a mysql-service que es el nombre del Service de K8s
-        command: ['sh', '-c', 'until nc -z -v -w30 mysql-service 3306; do echo "Waiting for MySQL..."; sleep 5; done;']
+        # ESPERA ACTIVA PARA MYSQL Y EL CONFIG-SERVICE
+        command: ['sh', '-c', 'until nc -z mysql-service 3306 && nc -z config-service 8888; do echo "Esperando MySQL y Config Service..."; sleep 5; done;']
       containers:
       - name: tingeso-fee
         image: demishuaccha/tingeso-fee-service:latest
@@ -25,28 +25,44 @@ spec:
         env:
         - name: SERVER_PORT
           value: "8080"
-        - name: SPRING_CONFIG_IMPORT
-          value: "optional:configserver:http://config-service.default.svc.cluster.local:8888"
         
-        # URL de la base de datos (Usando el host del ConfigMap y la DB del init script)
-        - name: SPRING_DATASOURCE_URL
-          value: "jdbc:mysql://mysql-service:3306/fee_db"
+        # IMPORTACIÓN DE CONFIGURACIÓN (DNS interno simplificado)
+        - name: SPRING_CONFIG_IMPORT
+          value: "optional:configserver:http://config-service:8888"
+        
+        # 1. HOST DE LA BASE DE DATOS (Mapea con ${MYSQL_HOST} en fee.yaml)
+        - name: MYSQL_HOST
+          value: "mysql-service"
 
-        # Credenciales usando los nombres que Spring Boot reconoce por defecto
-        - name: SPRING_DATASOURCE_USERNAME
+        # 2. CREDENCIALES (Nombres sincronizados con los placeholders de config-data)
+        - name: DB_USERNAME
           valueFrom:
             secretKeyRef:
               name: mysql-secrets
               key: user_fee
-        - name: SPRING_DATASOURCE_PASSWORD
+        - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
               name: mysql-secrets
               key: pass_fee
         
-        # Para que se encuentre con Eureka correctamente
-        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
-          value: "http://eureka-service:8761/eureka/"
+        # 3. HOST DE EUREKA (Mapea con ${EUREKA_HOST} en el YAML centralizado)
+        - name: EUREKA_HOST
+          value: "eureka-service"
+
+        # 4. SONDAS DE SALUD (PROBES) - Vital para que el Gateway sepa cuándo enviar tráfico
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 40
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 70
+          periodSeconds: 20
 
 ---
 apiVersion: v1

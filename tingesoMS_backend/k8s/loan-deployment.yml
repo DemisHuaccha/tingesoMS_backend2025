@@ -12,10 +12,10 @@ spec:
         app: tingeso-loan
     spec:
       initContainers:
-      - name: wait-for-mysql
+      - name: wait-for-infrastructure
         image: busybox
-        # CORRECCIÓN: Usamos el nombre del Service de K8s 'mysql-service'
-        command: ['sh', '-c', 'until nc -z -v -w30 mysql-service 3306; do echo "Waiting for MySQL..."; sleep 5; done;']
+        # ESPERA TANTO A MYSQL COMO AL CONFIG-SERVICE
+        command: ['sh', '-c', 'until nc -z mysql-service 3306 && nc -z config-service 8888; do echo "Esperando infraestructura..."; sleep 5; done;']
       containers:
       - name: tingeso-loan
         image: demishuaccha/tingeso-loan-service:latest
@@ -25,43 +25,43 @@ spec:
         env:
         - name: SERVER_PORT
           value: "8080"
-        - name: SPRING_CONFIG_IMPORT
-          value: "optional:configserver:http://config-service.default.svc.cluster.local:8888"
         
-        # 1. URL DE LA BASE DE DATOS
-        # Asegura la conexión al host del servicio y a la base de datos correcta
-        - name: SPRING_DATASOURCE_URL
-          value: "jdbc:mysql://mysql-service:3306/loan_db"
+        # IMPORTACIÓN DE CONFIGURACIÓN (DNS simplificado)
+        - name: SPRING_CONFIG_IMPORT
+          value: "optional:configserver:http://config-service:8888"
+        
+        # 1. HOST DE BASE DE DATOS (Mapea con ${MYSQL_HOST} en loan.yaml)
+        - name: MYSQL_HOST
+          value: "mysql-service"
 
-        # 2. CREDENCIALES ESTÁNDAR DE SPRING BOOT
-        # Mapeadas desde el Secret 'mysql-secrets'
-        - name: SPRING_DATASOURCE_USERNAME
+        # 2. CREDENCIALES (Nombres estandarizados para que loan.yaml los reconozca)
+        - name: DB_USERNAME
           valueFrom:
             secretKeyRef:
               name: mysql-secrets
               key: user_loan
-        - name: SPRING_DATASOURCE_PASSWORD
+        - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
               name: mysql-secrets
               key: pass_loan
         
-        # 3. CONEXIÓN A EUREKA
-        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
-          value: "http://eureka-service:8761/eureka/"
+        # 3. HOST DE EUREKA (Mapea con ${EUREKA_HOST} en loan.yaml)
+        - name: EUREKA_HOST
+          value: "eureka-service"
 
-        # 4. SONDAS DE SALUD (PROBES)
+        # 4. PROBES DE SALUD
         readinessProbe:
           httpGet:
             path: /actuator/health
             port: 8080
-          initialDelaySeconds: 30
+          initialDelaySeconds: 40 # Tiempo suficiente para que Spring Boot inicie
           periodSeconds: 10
         livenessProbe:
           httpGet:
             path: /actuator/health
             port: 8080
-          initialDelaySeconds: 60
+          initialDelaySeconds: 70
           periodSeconds: 20
 
 ---

@@ -1,14 +1,16 @@
 server:
-  port: ${PORT:${SERVER_PORT:0}}
+  # Establecemos 8080 como puerto estándar para el contenedor en Kubernetes
+  port: ${PORT:${SERVER_PORT:8080}}
 
 spring:
   application:
-    # Vincula este microservicio con la ruta lb://tingesoMS_fee definida en el Gateway
     name: tingesoMS_fee
   datasource:
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/fee_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:root}
+    # Apuntamos al nombre del Service de la base de datos en el clúster
+    url: jdbc:mysql://${MYSQL_HOST:mysql-service}:3306/fee_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
+    # Forzamos el uso de las variables inyectadas por Kubernetes (sin default :root)
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -16,7 +18,8 @@ spring:
     show-sql: true
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQL8Dialect
+        # Dialecto optimizado para Hibernate 6
+        dialect: org.hibernate.dialect.MySQLDialect
 
 eureka:
   client:
@@ -25,6 +28,5 @@ eureka:
     service-url:
       defaultZone: http://${EUREKA_HOST:eureka-service}:8761/eureka/
   instance:
-    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
-    # Mejora la conectividad en entornos Docker/redes virtuales
+    instance-id: ${spring.application.name}:${random.value}
     prefer-ip-address: true

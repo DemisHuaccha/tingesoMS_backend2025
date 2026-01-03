@@ -1,14 +1,16 @@
 server:
-  port: ${PORT:${SERVER_PORT:0}}
+  # Puerto 8080 estandarizado para despliegues en Kubernetes
+  port: ${PORT:${SERVER_PORT:8080}}
 
 spring:
   application:
-    # Identificador único para el registro en Eureka y rutas del Gateway
     name: tingesoMS_inventory
   datasource:
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/inventory_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:root}
+    # Apuntamos al Service de MySQL definido en el clúster
+    url: jdbc:mysql://${MYSQL_HOST:mysql-service}:3306/inventory_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
+    # Variables inyectadas desde el deployment (secrets) para el usuario 'user_inventory'
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -16,7 +18,8 @@ spring:
     show-sql: true
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQL8Dialect
+        # Dialecto genérico recomendado para Hibernate 6+ (Spring Boot 3)
+        dialect: org.hibernate.dialect.MySQLDialect
 
 eureka:
   client:
@@ -25,6 +28,6 @@ eureka:
     service-url:
       defaultZone: http://${EUREKA_HOST:eureka-service}:8761/eureka/
   instance:
-    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
-    # Facilita la comunicación en entornos de red virtualizados
+    # Identificador simplificado para la consola de Eureka
+    instance-id: ${spring.application.name}:${random.value}
     prefer-ip-address: true

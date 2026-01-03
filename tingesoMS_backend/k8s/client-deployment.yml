@@ -12,10 +12,10 @@ spec:
         app: tingeso-client
     spec:
       initContainers:
-      - name: wait-for-mysql
+      - name: wait-for-infrastructure
         image: busybox
-        # CORRECCIÓN: Apuntamos al nombre del servicio 'mysql-service'
-        command: ['sh', '-c', 'until nc -z -v -w30 mysql-service 3306; do echo "Waiting for MySQL..."; sleep 5; done;']
+        # ESPERA ACTIVA PARA MYSQL Y EL CONFIG-SERVICE
+        command: ['sh', '-c', 'until nc -z mysql-service 3306 && nc -z config-service 8888; do echo "Esperando infraestructura..."; sleep 5; done;']
       containers:
       - name: tingeso-client
         image: demishuaccha/tingeso-client-service:latest
@@ -25,41 +25,43 @@ spec:
         env:
         - name: SERVER_PORT
           value: "8080"
-        - name: SPRING_CONFIG_IMPORT
-          value: "optional:configserver:http://config-service.default.svc.cluster.local:8888"
         
-        # 1. URL DE LA BASE DE DATOS (Inyectada directamente)
-        - name: SPRING_DATASOURCE_URL
-          value: "jdbc:mysql://mysql-service:3306/client_db"
+        # IMPORTACIÓN DE CONFIGURACIÓN (DNS simplificado)
+        - name: SPRING_CONFIG_IMPORT
+          value: "optional:configserver:http://config-service:8888"
+        
+        # 1. HOST DE LA BASE DE DATOS (Mapea con ${MYSQL_HOST} en client.yaml)
+        - name: MYSQL_HOST
+          value: "mysql-service"
 
-        # 2. CREDENCIALES ESTÁNDAR DE SPRING (Extraídas de tus secrets)
-        - name: SPRING_DATASOURCE_USERNAME
+        # 2. CREDENCIALES (Nombres exactos para el mapeo con el Config Server)
+        - name: DB_USERNAME
           valueFrom:
             secretKeyRef:
               name: mysql-secrets
               key: user_client
-        - name: SPRING_DATASOURCE_PASSWORD
+        - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
               name: mysql-secrets
               key: pass_client
         
-        # 3. CONEXIÓN A EUREKA
-        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
-          value: "http://eureka-service:8761/eureka/"
+        # 3. HOST DE EUREKA (Sincronizado con ${EUREKA_HOST} en client.yaml)
+        - name: EUREKA_HOST
+          value: "eureka-service"
 
-        # 4. PROBES PARA ASEGURAR DISPONIBILIDAD
+        # 4. SONDAS DE SALUD (PROBES)
         readinessProbe:
           httpGet:
             path: /actuator/health
             port: 8080
-          initialDelaySeconds: 30
+          initialDelaySeconds: 40 
           periodSeconds: 10
         livenessProbe:
           httpGet:
             path: /actuator/health
             port: 8080
-          initialDelaySeconds: 60
+          initialDelaySeconds: 70
           periodSeconds: 20
 
 ---

@@ -12,10 +12,10 @@ spec:
         app: tingeso-report
     spec:
       initContainers:
-      - name: wait-for-mysql
+      - name: wait-for-infrastructure
         image: busybox
-        # CORRECCIÓN: Apuntamos al Service 'mysql-service'
-        command: ['sh', '-c', 'until nc -z -v -w30 mysql-service 3306; do echo "Waiting for MySQL..."; sleep 5; done;']
+        # AHORA ESPERA A MYSQL Y AL CONFIG-SERVICE
+        command: ['sh', '-c', 'until nc -z mysql-service 3306 && nc -z config-service 8888; do echo "Esperando infraestructura..."; sleep 5; done;']
       containers:
       - name: tingeso-report
         image: demishuaccha/tingeso-report-service:latest
@@ -25,41 +25,42 @@ spec:
         env:
         - name: SERVER_PORT
           value: "8080"
+        # Usamos el DNS corto para simplicidad
         - name: SPRING_CONFIG_IMPORT
-          value: "optional:configserver:http://config-service.default.svc.cluster.local:8888"
+          value: "optional:configserver:http://config-service:8888"
         
-        # 1. URL DE LA BASE DE DATOS (Específica para Report)
-        - name: SPRING_DATASOURCE_URL
-          value: "jdbc:mysql://mysql-service:3306/report_db"
+        # 1. URL DE LA BASE DE DATOS (Mantenemos el nombre que espera el .yaml de config-data)
+        - name: MYSQL_HOST
+          value: "mysql-service"
 
-        # 2. CREDENCIALES ESTÁNDAR DE SPRING
-        - name: SPRING_DATASOURCE_USERNAME
+        # 2. CREDENCIALES (Cambiamos los nombres para que coincidan con report.yaml)
+        - name: DB_USERNAME
           valueFrom:
             secretKeyRef:
               name: mysql-secrets
               key: user_report
-        - name: SPRING_DATASOURCE_PASSWORD
+        - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
               name: mysql-secrets
               key: pass_report
         
         # 3. CONEXIÓN A EUREKA
-        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
-          value: "http://eureka-service:8761/eureka/"
+        - name: EUREKA_HOST
+          value: "eureka-service"
 
         # 4. PROBES DE SALUD
         readinessProbe:
           httpGet:
             path: /actuator/health
             port: 8080
-          initialDelaySeconds: 30
+          initialDelaySeconds: 40 # Aumentamos un poco para dar tiempo a Java de levantar
           periodSeconds: 10
         livenessProbe:
           httpGet:
             path: /actuator/health
             port: 8080
-          initialDelaySeconds: 60
+          initialDelaySeconds: 70
           periodSeconds: 20
 
 ---

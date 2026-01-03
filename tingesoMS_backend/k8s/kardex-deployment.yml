@@ -12,10 +12,10 @@ spec:
         app: tingeso-kardex
     spec:
       initContainers:
-      - name: wait-for-mysql
+      - name: wait-for-infrastructure
         image: busybox
-        # CORRECCIÓN: Apuntamos al nombre del Service oficial 'mysql-service'
-        command: ['sh', '-c', 'until nc -z -v -w30 mysql-service 3306; do echo "Waiting for MySQL..."; sleep 5; done;']
+        # AHORA ESPERA A MYSQL Y AL CONFIG-SERVICE SIMULTÁNEAMENTE
+        command: ['sh', '-c', 'until nc -z mysql-service 3306 && nc -z config-service 8888; do echo "Esperando MySQL y Config Service..."; sleep 5; done;']
       containers:
       - name: tingeso-kardex
         image: demishuaccha/tingeso-kardex-service:latest
@@ -25,41 +25,43 @@ spec:
         env:
         - name: SERVER_PORT
           value: "8080"
-        - name: SPRING_CONFIG_IMPORT
-          value: "optional:configserver:http://config-service.default.svc.cluster.local:8888"
         
-        # 1. URL DE LA BASE DE DATOS
-        - name: SPRING_DATASOURCE_URL
-          value: "jdbc:mysql://mysql-service:3306/kardex_db"
+        # IMPORTACIÓN DE CONFIGURACIÓN (DNS simplificado para el clúster)
+        - name: SPRING_CONFIG_IMPORT
+          value: "optional:configserver:http://config-service:8888"
+        
+        # 1. HOST DE BASE DE DATOS (Mapea con ${MYSQL_HOST} en tu kardex.yaml de config-data)
+        - name: MYSQL_HOST
+          value: "mysql-service"
 
-        # 2. CREDENCIALES ESTÁNDAR (Mapeadas desde tus secrets)
-        - name: SPRING_DATASOURCE_USERNAME
+        # 2. CREDENCIALES (Nombres exactos que pusimos en el archivo de configuración externa)
+        - name: DB_USERNAME
           valueFrom:
             secretKeyRef:
               name: mysql-secrets
               key: user_kardex
-        - name: SPRING_DATASOURCE_PASSWORD
+        - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
               name: mysql-secrets
               key: pass_kardex
         
-        # 3. CONEXIÓN A EUREKA
-        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
-          value: "http://eureka-service:8761/eureka/"
+        # 3. HOST DE EUREKA (Mapea con ${EUREKA_HOST} en el YAML centralizado)
+        - name: EUREKA_HOST
+          value: "eureka-service"
 
-        # 4. PROBES DE SALUD (Actuators)
+        # 4. PROBES DE SALUD (ACTUATOR)
         readinessProbe:
           httpGet:
             path: /actuator/health
             port: 8080
-          initialDelaySeconds: 30
+          initialDelaySeconds: 40 # Tiempo prudente para el arranque de Spring Boot
           periodSeconds: 10
         livenessProbe:
           httpGet:
             path: /actuator/health
             port: 8080
-          initialDelaySeconds: 60
+          initialDelaySeconds: 70
           periodSeconds: 20
 
 ---

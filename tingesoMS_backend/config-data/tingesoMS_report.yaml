@@ -1,14 +1,16 @@
 server:
-  port: ${PORT:${SERVER_PORT:0}}
+  # Puerto 8080 estandarizado para el contenedor en Kubernetes
+  port: ${PORT:${SERVER_PORT:8080}}
 
 spring:
   application:
-    # Nombre clave para que el Gateway encuentre este servicio en lb://tingesoMS_report
     name: tingesoMS_report
   datasource:
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/report_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:root}
+    # Apuntamos al Service de MySQL: mysql-service
+    url: jdbc:mysql://${MYSQL_HOST:mysql-service}:3306/report_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
+    # Usuario y contraseña inyectados desde los secretos (user_report / pass_report)
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -16,7 +18,8 @@ spring:
     show-sql: true
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQL8Dialect
+        # Dialecto simplificado para Hibernate 6+
+        dialect: org.hibernate.dialect.MySQLDialect
 
 eureka:
   client:
@@ -25,6 +28,6 @@ eureka:
     service-url:
       defaultZone: http://${EUREKA_HOST:eureka-service}:8761/eureka/
   instance:
-    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
-    # Facilita la comunicación interna eliminando problemas de resolución de nombres de host
+    # Identificador único para el registro en Eureka
+    instance-id: ${spring.application.name}:${random.value}
     prefer-ip-address: true

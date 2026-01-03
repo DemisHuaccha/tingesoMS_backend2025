@@ -19,7 +19,7 @@ spec:
   resources:
     requests:
       storage: 1Gi
-  # No definimos storageClassName ni volumeName para evitar errores de inmutabilidad
+  # Dejamos que Kubernetes lo vincule automáticamente al PV disponible
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -30,7 +30,7 @@ spec:
     matchLabels:
       app: mysql-db
   strategy:
-    type: Recreate
+    type: Recreate # Evita que dos pods intenten usar el mismo volumen a la vez
   template:
     metadata:
       labels:
@@ -42,6 +42,7 @@ spec:
           env:
             - name: MYSQL_ROOT_PASSWORD
               valueFrom: { secretKeyRef: { name: mysql-secrets, key: password } }
+            # Inyección de usuarios para el script init.sh
             - name: user_auth
               valueFrom: { secretKeyRef: { name: mysql-secrets, key: user_auth } }
             - name: pass_auth

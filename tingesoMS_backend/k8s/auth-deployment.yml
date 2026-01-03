@@ -11,11 +11,11 @@ spec:
       labels:
         app: tingeso-auth
     spec:
-      initContainers: 
-      - name: wait-for-mysql
+      initContainers:
+      - name: wait-for-infrastructure
         image: busybox
-        # CORRECCIÓN: Usamos 'mysql-service' que es el nombre del Service de K8s
-        command: ['sh', '-c', 'until nc -z -v -w30 mysql-service 3306; do echo "Waiting for MySQL..."; sleep 5; done;']
+        # ESPERA ACTIVA PARA MYSQL Y EL CONFIG-SERVICE
+        command: ['sh', '-c', 'until nc -z mysql-service 3306 && nc -z config-service 8888; do echo "Esperando infraestructura..."; sleep 5; done;']
       containers:
       - name: tingeso-auth
         image: demishuaccha/tingeso-auth-service:latest
@@ -25,42 +25,43 @@ spec:
         env:
         - name: SERVER_PORT
           value: "8080"
-        - name: SPRING_CONFIG_IMPORT
-          value: "optional:configserver:http://config-service.default.svc.cluster.local:8888"
         
-        # 1. URL DE LA BASE DE DATOS
-        # Apuntamos al servicio de MySQL y a la base de datos creada en el init script
-        - name: SPRING_DATASOURCE_URL
-          value: "jdbc:mysql://mysql-service:3306/auth_db"
+        # IMPORTACIÓN DE CONFIGURACIÓN (DNS interno de Kubernetes)
+        - name: SPRING_CONFIG_IMPORT
+          value: "optional:configserver:http://config-service:8888"
+        
+        # 1. HOST DE LA BASE DE DATOS (Sincronizado con ${MYSQL_HOST} en auth.yaml)
+        - name: MYSQL_HOST
+          value: "mysql-service"
 
-        # 2. CREDENCIALES ESTÁNDAR (Para evitar fallos si el Config Server tarda)
-        - name: SPRING_DATASOURCE_USERNAME
+        # 2. CREDENCIALES (Nombres exactos para el mapeo con el Config Server)
+        - name: DB_USERNAME
           valueFrom:
             secretKeyRef:
               name: mysql-secrets
               key: user_auth
-        - name: SPRING_DATASOURCE_PASSWORD
+        - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
               name: mysql-secrets
               key: pass_auth
         
-        # 3. REGISTRO EN EUREKA
-        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
-          value: "http://eureka-service:8761/eureka/"
+        # 3. HOST DE EUREKA (Sincronizado con ${EUREKA_HOST} en auth.yaml)
+        - name: EUREKA_HOST
+          value: "eureka-service"
 
-        # 4. PROBES PARA ESTABILIDAD
+        # 4. SONDAS DE SALUD (PROBES)
         readinessProbe:
           httpGet:
             path: /actuator/health
             port: 8080
-          initialDelaySeconds: 30
+          initialDelaySeconds: 40 # Tiempo de gracia para el arranque de Spring Boot
           periodSeconds: 10
         livenessProbe:
           httpGet:
             path: /actuator/health
             port: 8080
-          initialDelaySeconds: 60
+          initialDelaySeconds: 70
           periodSeconds: 20
 
 ---
