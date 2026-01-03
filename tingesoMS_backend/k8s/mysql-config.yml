@@ -3,8 +3,6 @@ kind: ConfigMap
 metadata:
   name: mysql-config
 data:
-  # CORRECCIÓN: Usamos el nombre del Service 'mysql-service'
-  # El nombre 'mysql-db' es el nombre del despliegue, que no es resoluble por DNS interno para balanceo.
   host: mysql-service
   port: "3306"
   database: tingeso_db
