@@ -36,34 +36,42 @@ pipeline {
                 stage('Report Service') { steps { buildAndPush('tingesoMS_report', 'tingeso-report-service') } }
             }
         }
-
         stage('Deploy to K8s') {
             steps {
                 script {
-                    // 1. ConfigMap (Idempotente)
+                    // 1. ConfigMap de la aplicación (Repositorio de configuraciones nativo)
                     bat "kubectl create configmap config-repo --from-file=${env.BASE_DIR}/config-data --dry-run=client -o yaml | kubectl apply -f -"
 
-                    // 2. Base de Datos (Infraestructura)
+                    // 2. Infraestructura de Base de Datos
+                    echo "Aplicando configuración y almacenamiento de MySQL..."
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-pv.yml"
+                    bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-secrets.yml"
+                    bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-config.yml"
+                    bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-init-script.yml"
+                    
+                    // Asegúrate de que mysql-deployment.yml contenga el bloque del PVC
+                    echo "Desplegando MySQL..."
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-deployment.yml"
                     
-                    echo "Esperando a MySQL..."
-                    bat "kubectl wait --for=condition=ready pod -l app=mysql-db --timeout=90s"
+                    echo "Esperando a que MySQL esté READY..."
+                    bat "kubectl wait --for=condition=ready pod -l app=mysql-db --timeout=150s"
                     
-                    // 3. Config Service (El que corregiste)
+                    // 3. Config Service (Depende de MySQL)
+                    echo "Desplegando Config Service..."
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/config-deployment.yml"
                     
                     echo "Esperando a Config Service (Cerebro)..."
-                    // Esperamos a que el POD esté listo antes de seguir con Eureka
-                    bat "kubectl wait --for=condition=ready pod -l app=config-service --timeout=120s"
+                    bat "kubectl wait --for=condition=ready pod -l app=config-service --timeout=150s"
                     
-                    // 4. Eureka (Discovery)
+                    // 4. Eureka (Depende de Config Service)
+                    echo "Desplegando Eureka..."
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/eureka-deployment.yml"
-                    echo "Esperando a Eureka..."
-                    bat "kubectl wait --for=condition=ready pod -l app=eureka-service --timeout=120s"
                     
-                    // 5. El resto de los servicios (Aplicamos toda la carpeta)
-                    echo "Desplegando el resto de microservicios..."
+                    echo "Esperando a Eureka (Discovery)..."
+                    bat "kubectl wait --for=condition=ready pod -l app=eureka-service --timeout=150s"
+                    
+                    // 5. Despliegue masivo del resto de microservicios
+                    echo "Desplegando microservicios de negocio y Gateway..."
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/"
                 }
             }
