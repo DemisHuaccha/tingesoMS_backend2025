@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: gateway-service
+  config:
+    import: "optional:configserver:${SPRING_CONFIG_IMPORT_URL:http://localhost:8888}"
+
+# Esto es lo que probablemente faltaba y causaba el 404:
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  endpoint:
+    health:
+      show-details: always

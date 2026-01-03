@@ -14,7 +14,7 @@ spec:
       initContainers:
       - name: wait-for-infrastructure
         image: busybox
-        # AHORA ESPERA A MYSQL Y AL CONFIG-SERVICE
+        # ESPERA ACTIVA PARA MYSQL Y EL CONFIG-SERVICE
         command: ['sh', '-c', 'until nc -z mysql-service 3306 && nc -z config-service 8888; do echo "Esperando infraestructura..."; sleep 5; done;']
       containers:
       - name: tingeso-report
@@ -25,15 +25,10 @@ spec:
         env:
         - name: SERVER_PORT
           value: "8080"
-        # Usamos el DNS corto para simplicidad
         - name: SPRING_CONFIG_IMPORT
           value: "optional:configserver:http://config-service:8888"
-        
-        # 1. URL DE LA BASE DE DATOS (Mantenemos el nombre que espera el .yaml de config-data)
         - name: MYSQL_HOST
           value: "mysql-service"
-
-        # 2. CREDENCIALES (Cambiamos los nombres para que coincidan con report.yaml)
         - name: DB_USERNAME
           valueFrom:
             secretKeyRef:
@@ -44,17 +39,15 @@ spec:
             secretKeyRef:
               name: mysql-secrets
               key: pass_report
-        
-        # 3. CONEXIÓN A EUREKA
         - name: EUREKA_HOST
           value: "eureka-service"
 
-        # 4. PROBES DE SALUD
+        # SONDAS DE SALUD EN EL CONTENEDOR (Correcto)
         readinessProbe:
           httpGet:
             path: /actuator/health
             port: 8080
-          initialDelaySeconds: 40 # Aumentamos un poco para dar tiempo a Java de levantar
+          initialDelaySeconds: 40 
           periodSeconds: 10
         livenessProbe:
           httpGet:
@@ -62,7 +55,6 @@ spec:
             port: 8080
           initialDelaySeconds: 70
           periodSeconds: 20
-
 ---
 apiVersion: v1
 kind: Service
@@ -74,16 +66,5 @@ spec:
   ports:
   - port: 8080
     targetPort: 8080
-    readinessProbe:
-        httpGet:
-            path: /actuator/health
-            port: 8080
-        initialDelaySeconds: 40 # Dale tiempo a Spring para arrancar
-        periodSeconds: 10
-    livenessProbe:
-        httpGet:
-            path: /actuator/health
-            port: 8080
-        initialDelaySeconds: 60
-        periodSeconds: 20
+  # SE ELIMINARON LAS SONDAS DE AQUÍ (No pertenecen al Service)
   type: ClusterIP

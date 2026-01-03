@@ -25,23 +25,19 @@ spec:
         - name: SERVER_PORT
           value: "8888"
         
-        # --- AÑADIDO PARA ESTABILIDAD ---
-        
-        # Readiness Probe: Vital para que Eureka y los demás servicios 
-        # no intenten pedir configuración hasta que este servicio responda.
+        # Las sondas de salud SIEMPRE van aquí, dentro del contenedor
         readinessProbe:
           httpGet:
             path: /actuator/health
             port: 8888
-          initialDelaySeconds: 20
+          initialDelaySeconds: 40 
           periodSeconds: 10
         
-        # Liveness Probe: Reinicia el servicio si el servidor de config se queda "colgado".
         livenessProbe:
           httpGet:
             path: /actuator/health
             port: 8888
-          initialDelaySeconds: 40
+          initialDelaySeconds: 60
           periodSeconds: 20
 
         volumeMounts:
@@ -61,17 +57,5 @@ spec:
     app: config-service
   ports:
   - port: 8888
-    targetPort: 8888 # ¡IMPORTANTE! Si el log de esta app dice "Started on 8080"
-    readinessProbe:
-        httpGet:
-            path: /actuator/health
-            port: 8080
-        initialDelaySeconds: 40 # Dale tiempo a Spring para arrancar
-        periodSeconds: 10
-    livenessProbe:
-        httpGet:
-            path: /actuator/health
-            port: 8080
-        initialDelaySeconds: 60
-        periodSeconds: 20
+    targetPort: 8888
   type: ClusterIP

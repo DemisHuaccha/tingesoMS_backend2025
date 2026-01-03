@@ -11,7 +11,6 @@ spec:
       labels:
         app: gateway-service
     spec:
-      # 1. INIT CONTAINER: Espera a que Eureka esté listo para evitar errores de ruteo
       initContainers:
       - name: wait-for-eureka
         image: busybox
@@ -27,13 +26,10 @@ spec:
           value: "8080"
         - name: SPRING_CONFIG_IMPORT
           value: "optional:configserver:http://config-service.default.svc.cluster.local:8888"
-        
-        # 2. CONEXIÓN A EUREKA (Indispensable para el ruteo dinámico)
         - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
           value: "http://eureka-service:8761/eureka/"
 
-        # 3. PROBES: Aseguran que el Gateway solo reciba tráfico externo 
-        # cuando ya esté conectado a Eureka y al Config Server.
+        # SONDAS EN EL CONTENEDOR (Correcto)
         readinessProbe:
           httpGet:
             path: /actuator/health
@@ -46,29 +42,17 @@ spec:
             port: 8080
           initialDelaySeconds: 60
           periodSeconds: 20
-
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: gateway-service
 spec:
+  type: NodePort # Mantenemos NodePort para acceso externo
   selector:
     app: gateway-service
   ports:
   - port: 8080
     targetPort: 8080
-    nodePort: 30080 # Puerto para acceder desde tu navegador en Windows
-    readinessProbe:
-        httpGet:
-            path: /actuator/health
-            port: 8080
-        initialDelaySeconds: 40 # Dale tiempo a Spring para arrancar
-        periodSeconds: 10
-    livenessProbe:
-        httpGet:
-            path: /actuator/health
-            port: 8080
-        initialDelaySeconds: 60
-        periodSeconds: 20
-  type: NodePort # Mantenemos NodePort para fácil acceso en Minikube
+    nodePort: 30080
+    # SE ELIMINARON LAS SONDAS DE AQUÍ
