@@ -12,13 +12,12 @@ pipeline {
         stage('Cleanup Environment') {
             steps {
                 script {
-                    echo "--- LIMPIEZA TOTAL: Borrando recursos previos ---"
-                    // El flag --wait=true es vital para evitar el error de PVC inmutable
+                    echo "--- LIMPIEZA: Borrando recursos de Kubernetes ---"
+                    // Eliminamos todo y esperamos a que K8s confirme el borrado
                     bat "kubectl delete all,pvc,pv,configmap,secret --all --ignore-not-found --wait=true"
                     
-                    echo "--- LIMPIEZA FÍSICA: Borrando datos de MySQL en Minikube ---"
-                    // Esto asegura que el init.sh de MySQL se ejecute de nuevo
-                    bat "minikube ssh \"sudo rm -rf /mnt/data/*\""
+                    echo "--- NOTA: Limpieza física de Minikube ya realizada manualmente ---"
+                    // Hemos quitado el comando 'minikube ssh' porque Jenkins no tiene acceso al perfil del usuario
                 }
             }
         }
@@ -51,33 +50,33 @@ pipeline {
         stage('Deploy to K8s') {
             steps {
                 script {
-                    // 1. Configuración Base (Secrets y ConfigMaps)
-                    echo "Configurando Secretos y ConfigMaps..."
+                    // 1. Configuración Base
+                    echo "Aplicando Secretos y ConfigMaps..."
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-secrets.yml"
                     bat "kubectl create configmap config-repo --from-file=${env.BASE_DIR}/config-data --dry-run=client -o yaml | kubectl apply -f -"
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-init-script.yml"
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-config.yml"
 
-                    // 2. Infraestructura de MySQL (PV + Deployment/Service/PVC)
-                    echo "Levantando MySQL..."
+                    // 2. Base de Datos
+                    echo "Desplegando MySQL e Infraestructura de Almacenamiento..."
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-pv.yml"
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-deployment.yml"
                     
                     echo "Esperando a MySQL (180s)..."
                     bat "kubectl wait --for=condition=ready pod -l app=mysql-db --timeout=180s"
                     
-                    // 3. Config Service (Cerebro)
+                    // 3. Cerebro del sistema (Config Service)
                     echo "Desplegando Config Service..."
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/config-deployment.yml"
                     bat "kubectl wait --for=condition=ready pod -l app=config-service --timeout=180s"
                     
-                    // 4. Eureka (Discovery)
+                    // 4. Descubrimiento (Eureka)
                     echo "Desplegando Eureka..."
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/eureka-deployment.yml"
                     bat "kubectl wait --for=condition=ready pod -l app=eureka-service --timeout=180s"
                     
-                    // 5. Resto de microservicios y Gateway
-                    echo "Desplegando microservicios finales..."
+                    // 5. Despliegue masivo final
+                    echo "Desplegando Microservicios de Negocio y Gateway..."
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/"
                 }
             }
@@ -87,11 +86,11 @@ pipeline {
     post {
         always {
             script {
-                try { bat 'docker logout' } catch (Exception e) { echo "Docker logout omitido" }
+                try { bat 'docker logout' } catch (Exception e) { echo "Logout ya realizado" }
             }
         }
-        success { echo "¡Sistema desplegado con éxito en Minikube!" }
-        failure { echo "El despliegue ha fallado. Revisa los logs de Jenkins." }
+        success { echo "¡Despliegue exitoso! El sistema está arriba." }
+        failure { echo "Hubo un error en el pipeline. Revisa los logs." }
     }
 }
 
