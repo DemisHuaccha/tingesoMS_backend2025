@@ -18,6 +18,15 @@ public class UserController {
         User newUser = userService.register(user);
         return ResponseEntity.ok(newUser);
     }
+
+    @PostMapping("/createUser")
+    public ResponseEntity<User> createUser(@RequestBody User user) {
+        User existing = userService.findByEmail(user.getEmail());
+        if (existing != null) {
+            return ResponseEntity.ok(existing);
+        }
+        return ResponseEntity.ok(userService.register(user));
+    }
     
     @GetMapping("/{id}")
     public ResponseEntity<User> getById(@PathVariable Long id) {
