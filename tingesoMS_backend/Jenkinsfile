@@ -34,29 +34,40 @@ pipeline {
             }
         }
 
+        stage('Cleanup Old Apps') {
+            steps {
+                script {
+                    echo "--- Eliminando aplicaciones antiguas (PROTEGIENDO KEYCLOAK Y DBS) ---"
+                    // Estos nombres coinciden EXACTAMENTE con tu 'kubectl get deployment'
+                    def appsToClean = [
+                        'config-service', 'eureka-service', 'gateway-service',
+                        'tingeso-auth', 'tingeso-client', 'tingeso-fee',
+                        'tingeso-inventory', 'tingeso-kardex', 'tingeso-loan', 'tingeso-report'
+                    ]
+                    
+                    appsToClean.each { name ->
+                        echo "Bajando despliegue y servicio: ${name}"
+                        bat "kubectl delete deployment ${name} --ignore-not-found=true"
+                        bat "kubectl delete service ${name} --ignore-not-found=true"
+                    }
+                }
+            }
+        }
+
         stage('Deploy Infrastructure') {
             steps {
                 script {
-                    echo "--- Configurando Infraestructura de Datos ---"
-                    bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-secrets.yml"
-                    bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-config.yml"
-                    bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-init-script.yml"
-                    
-                    // Refrescamos el ConfigMap de las propiedades (borrar y crear asegura que tome los cambios)
+                    echo "--- Actualizando ConfigMap de Propiedades ---"
+                    // El ConfigMap se refresca pero no afecta a los pods de las DBs directamente
                     bat "kubectl delete configmap config-repo --ignore-not-found"
                     bat "kubectl create configmap config-repo --from-file=${env.BASE_DIR}/config-data"
 
-                    // Despliegue de MySQL
-                    echo "Aplicando persistencia..."
+                    echo "--- Sincronizando MySQL (Sin borrar recursos existentes) ---"
+                    // Solo apply: si no hay cambios en los yml, Kubernetes no hace nada
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-pv.yml"
-                    
-                    // TRUCO PARA EL PVC: Si ya existe, no intentamos aplicarlo de nuevo para evitar el error 'immutable'
-                    // Pero si no existe (clúster limpio), lo creará.
+                    bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-secrets.yml"
+                    bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-config.yml"
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/mysql-deployment.yml"
-                    
-                    echo "Esperando que el Pod de MySQL esté listo..."
-                    // Aumentamos el timeout a 5 minutos por si el init-script es pesado
-                    bat "kubectl wait --for=condition=ready pod -l app=mysql-db --timeout=300s"
                 }
             }
         }
@@ -66,10 +77,10 @@ pipeline {
                 script {
                     echo "--- Levantando Config Server y Eureka ---"
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/config-deployment.yml"
-                    bat "kubectl wait --for=condition=ready pod -l app=config-service --timeout=180s"
+                    bat "kubectl wait --for=condition=ready pod -l app=config-service --timeout=120s"
                     
                     bat "kubectl apply -f ${env.BASE_DIR}/k8s/eureka-deployment.yml"
-                    bat "kubectl wait --for=condition=ready pod -l app=eureka-service --timeout=180s"
+                    bat "kubectl wait --for=condition=ready pod -l app=eureka-service --timeout=120s"
                 }
             }
         }
@@ -78,11 +89,10 @@ pipeline {
             steps {
                 script {
                     echo "--- Desplegando Microservicios de Negocio ---"
-                    // Desplegamos todos los servicios de la carpeta k8s
-                    // El orden se garantiza por los wait anteriores y los initContainers de los microservicios
-                    def services = ['gateway', 'auth', 'client', 'fee', 'inventory', 'kardex', 'loan', 'report']
-                    services.each { service ->
-                        bat "kubectl apply -f ${env.BASE_DIR}/k8s/${service}-deployment.yml"
+                    // Estos nombres de archivo corresponden a los de tu imagen (auth-deployment.yml, etc.)
+                    def serviceFiles = ['gateway', 'auth', 'client', 'fee', 'inventory', 'kardex', 'loan', 'report']
+                    serviceFiles.each { file ->
+                        bat "kubectl apply -f ${env.BASE_DIR}/k8s/${file}-deployment.yml"
                     }
                 }
             }
@@ -91,14 +101,10 @@ pipeline {
 
     post {
         always {
-            script {
-                try { bat 'docker logout' } catch (Exception e) { echo "Docker logout finalizado." }
-            }
+            script { bat 'docker logout' }
         }
         success {
-            echo "--------------------------------------------------------"
-            echo "¡ÉXITO! Todo el ecosistema ha sido levantado."
-            echo "--------------------------------------------------------"
+            echo "¡Actualización completada! Keycloak y Bases de Datos permanecieron intactos."
         }
     }
 }
@@ -108,7 +114,6 @@ def buildAndPush(folderName, imageName) {
         def fullName = "${env.DOCKER_HUB_REPO}/${imageName}:latest"
         def fullPath = "${env.BASE_DIR}/${folderName}"
         dir(fullPath) {
-            echo ">>> Procesando ${imageName}..."
             bat "mvn clean package -DskipTests" 
             bat "docker build -t ${fullName} ."
             bat "docker push ${fullName}"
