@@ -25,9 +25,7 @@ public class ToolService {
             tool.setCategory(dto.getCategory());
             // Default fields as per new DTO
             if(dto.getInitialCondition() != null) {
-                // Mapping String to Enum if necessary, assuming Enum exists in Entity or String just saved.
-                // Assuming Entity uses String or Enum. Let's check Entity if possible, but for now saving as is.
-                // tool.setInitialCondition(dto.getInitialCondition()); 
+                tool.setInitialCondition(dto.getInitialCondition()); 
             }
             tool.setStatus(dto.getStatus() != null ? dto.getStatus() : true);
             tool.setUnderRepair(dto.getUnderRepair() != null ? dto.getUnderRepair() : false);

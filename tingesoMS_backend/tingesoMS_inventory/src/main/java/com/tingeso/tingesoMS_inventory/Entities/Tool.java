@@ -36,5 +36,9 @@ public class Tool {
     @JsonProperty("deleteStatus")
     private Boolean deleteStatus;
 
+    @Enumerated(EnumType.STRING)
+    @JsonProperty("initialCondition")
+    private com.tingeso.tingesoMS_inventory.Dtos.InitialCondition initialCondition;
+
     // Prices moved to M4
 }
