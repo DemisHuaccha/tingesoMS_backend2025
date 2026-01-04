@@ -10,7 +10,11 @@ public class LoanDto {
     private LocalDate returnDate;
     private String clientRut;
     private String toolName;
+    private Long toolId;
+    private String toolCategory;
+    private Integer toolLoanFee;
     private Boolean loanStatus;
     private Boolean penalty;
     private Integer penaltyTotal;
+    private Integer priceToPay;
 }

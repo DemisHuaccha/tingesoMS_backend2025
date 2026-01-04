@@ -1,7 +1,7 @@
 spring:
   application:
     # Debe coincidir exactamente con tingesoMS_client.yaml en tu repo de GitHub
-    name: tingesoMS_client
+    name: tingesoMS-client
   cloud:
     config:
       uri: http://${CONFIG_SERVER_HOST:localhost}:8888

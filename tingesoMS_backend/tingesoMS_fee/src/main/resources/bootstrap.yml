@@ -1,7 +1,7 @@
 spring:
   application:
     # Nombre exacto para vincular con tingesoMS_fee.yaml en GitHub
-    name: tingesoMS_fee
+    name: tingesoMS-fee
   cloud:
     config:
       # Conexión al Config Server en el puerto 8888

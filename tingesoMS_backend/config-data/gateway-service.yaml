@@ -8,8 +8,6 @@ eureka:
     service-url:
       defaultZone: http://${EUREKA_HOST:eureka-service}:8761/eureka/
   instance:
-    # Es recomendable usar el nombre del servicio o IP en lugar de localhost
-    # para que Eureka sepa cómo redirigir el tráfico al gateway
     instance-id: ${spring.application.name}:${random.value}
     prefer-ip-address: true
 
@@ -31,34 +29,60 @@ spring:
       discovery:
         locator:
           enabled: true
-          # Esto permite que el gateway sea sensible a minúsculas/mayúsculas según el registro
           lower-case-service-id: true 
       routes:
+        # 1. AUTH SERVICE (Usa /user en el front -> /api/auth en el back)
         - id: auth-service
           uri: lb://tingesoMS-auth
           predicates:
-            - Path=/auth/**
+            - Path=/user/**
+          filters:
+            - RewritePath=/user/(?<segment>.*), /api/auth/${segment}
+
+        # 2. CLIENT SERVICE (Usa /client en el front -> /api/client en el back)
         - id: client-service
-          uri: lb://client-service
+          uri: lb://tingesoMS-client
           predicates:
             - Path=/client/**
+          filters:
+            - RewritePath=/client/(?<segment>.*), /api/client/${segment}
+
+        # 3. FEE SERVICE (Usa /fee en el front -> /api/fee en el back)
         - id: fee-service
-          uri: lb://fee-service
+          uri: lb://tingesoMS-fee
           predicates:
             - Path=/fee/**
+          filters:
+            - RewritePath=/fee/(?<segment>.*), /api/fee/${segment}
+
+        # 4. INVENTORY SERVICE (Usa /inventory en el front -> /api/inventory en el back)
         - id: inventory-service
-          uri: lb://inventory-service
+          uri: lb://tingesoMS-inventory
           predicates:
             - Path=/inventory/**
+          filters:
+            - RewritePath=/inventory/(?<segment>.*), /api/inventory/${segment}
+
+        # 5. KARDEX SERVICE (Usa /kardex en el front -> /api/kardex en el back)
         - id: kardex-service
-          uri: lb://kardex-service
+          uri: lb://tingesoMS-kardex
           predicates:
             - Path=/kardex/**
+          filters:
+            - RewritePath=/kardex/(?<segment>.*), /api/kardex/${segment}
+
+        # 6. LOAN SERVICE (Usa /loan en el front -> /api/loan en el back)
         - id: loan-service
-          uri: lb://loan-service
+          uri: lb://tingesoMS-loan
           predicates:
             - Path=/loan/**
+          filters:
+            - RewritePath=/loan/(?<segment>.*), /api/loan/${segment}
+
+        # 7. REPORT SERVICE (Usa /report en el front -> /api/report en el back)
         - id: report-service
-          uri: lb://report-service
+          uri: lb://tingesoMS-report
           predicates:
             - Path=/report/**
+          filters:
+            - RewritePath=/report/(?<segment>.*), /api/report/${segment}

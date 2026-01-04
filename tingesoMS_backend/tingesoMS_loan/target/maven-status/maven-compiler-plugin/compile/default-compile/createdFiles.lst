@@ -16,4 +16,3 @@ com\tingeso\tingesoMS_loan\Dtos\ToolDto.class
 com\tingeso\tingesoMS_loan\Dtos\CreateLoanRequest.class
 com\tingeso\tingesoMS_loan\Dtos\ReturnLoanDto.class
 com\tingeso\tingesoMS_loan\Services\Feign\UserClient.class
-com\tingeso\tingesoMS_loan\Controller\ReportController.class

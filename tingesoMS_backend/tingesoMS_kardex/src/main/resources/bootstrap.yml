@@ -1,7 +1,7 @@
 spring:
   application:
     # Vinculación exacta con tingesoMS_kardex.yaml en GitHub
-    name: tingesoMS_kardex
+    name: tingesoMS-kardex
   cloud:
     config:
       # Localizamos el servidor de configuración en el puerto 8888

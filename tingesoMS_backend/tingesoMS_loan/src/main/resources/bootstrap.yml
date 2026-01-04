@@ -1,7 +1,7 @@
 spring:
   application:
     # Identificador para obtener la configuración tingesoMS_loan.yaml desde GitHub
-    name: tingesoMS_loan
+    name: tingesoMS-loan
   cloud:
     config:
       # Localización del servidor de configuración en el puerto 8888

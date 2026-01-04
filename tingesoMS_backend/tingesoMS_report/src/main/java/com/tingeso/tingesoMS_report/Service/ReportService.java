@@ -51,14 +51,32 @@ public class ReportService {
         }
     }
     
+    private static final String CLIENT_SERVICE_URL = "http://tingesoMS_client/api/client";
+
     // RF6.2 List Clients with Delays
-    // We can extract unique clients from Delayed Loans
-    public List<String> getClientsWithDelays() {
+    public List<com.tingeso.tingesoMS_report.Dtos.ClientDto> getClientsWithDelays() {
          List<LoanDto> delayed = getDelayedLoans();
-         return delayed.stream()
+         List<String> ruts = delayed.stream()
                  .map(LoanDto::getClientRut)
                  .distinct()
                  .collect(Collectors.toList());
+         
+         List<com.tingeso.tingesoMS_report.Dtos.ClientDto> clients = new java.util.ArrayList<>();
+         for(String rut : ruts) {
+             try {
+                // Assuming client service has endpoint getByRut
+                ResponseEntity<com.tingeso.tingesoMS_report.Dtos.ClientDto> response = restTemplate.getForEntity(
+                        CLIENT_SERVICE_URL + "/byRut?rut=" + rut,
+                        com.tingeso.tingesoMS_report.Dtos.ClientDto.class
+                );
+                if(response.getBody() != null) {
+                    clients.add(response.getBody());
+                }
+             } catch (Exception e) {
+                 e.printStackTrace();
+             }
+         }
+         return clients;
     }
 
     public List<ToolRankingDto> getToolRanking() {

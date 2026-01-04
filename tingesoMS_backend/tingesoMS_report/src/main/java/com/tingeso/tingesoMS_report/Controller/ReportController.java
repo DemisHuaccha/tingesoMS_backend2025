@@ -28,7 +28,7 @@ public class ReportController {
 
     // RF6.2
     @GetMapping("/delayed-clients")
-    public ResponseEntity<List<String>> getClientsWithDelays() {
+    public ResponseEntity<List<com.tingeso.tingesoMS_report.Dtos.ClientDto>> getClientsWithDelays() {
         return ResponseEntity.ok(reportService.getClientsWithDelays());
     }
     
@@ -42,5 +42,21 @@ public class ReportController {
     @GetMapping("/ranking")
     public ResponseEntity<List<ToolRankingDto>> getToolRanking() {
         return ResponseEntity.ok(reportService.getToolRanking());
+    }
+
+    // Compatibility endpoints for migration from tingesoMS_loan
+    @GetMapping("/active-loans")
+    public ResponseEntity<List<LoanDto>> getActiveLoansLegacy() {
+        return ResponseEntity.ok(reportService.getActiveLoans());
+    }
+
+    @GetMapping("/delinquent-clients")
+    public ResponseEntity<List<Long>> getDelinquentClientsLegacy() {
+        // Return IDs as the legacy controller did
+        List<com.tingeso.tingesoMS_report.Dtos.ClientDto> clients = reportService.getClientsWithDelays();
+        List<Long> ids = clients.stream()
+                .map(com.tingeso.tingesoMS_report.Dtos.ClientDto::getIdCustomer)
+                .collect(java.util.stream.Collectors.toList());
+        return ResponseEntity.ok(ids);
     }
 }

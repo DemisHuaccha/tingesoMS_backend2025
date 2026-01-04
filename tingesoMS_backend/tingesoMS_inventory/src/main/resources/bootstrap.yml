@@ -1,7 +1,7 @@
 spring:
   application:
     # Vincula este microservicio con tingesoMS_inventory.yaml en el Config Server
-    name: tingesoMS_inventory
+    name: tingesoMS-inventory
   cloud:
     config:
       # URL del servidor de configuración ajustada al puerto 8888

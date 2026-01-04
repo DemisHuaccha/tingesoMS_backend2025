@@ -1,7 +1,7 @@
 spring:
   application:
     # Vinculación exacta con tingesoMS_report.yaml en tu repositorio de GitHub
-    name: tingesoMS_report
+    name: tingesoMS-report
   cloud:
     config:
       # Localización del servidor de configuración en el puerto 8888

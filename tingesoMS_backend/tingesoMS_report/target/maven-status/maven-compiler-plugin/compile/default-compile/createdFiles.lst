@@ -6,3 +6,4 @@ com\tingeso\tingesoMS_report\Dtos\ToolRankingDto.class
 com\tingeso\tingesoMS_report\Controller\ReportController.class
 com\tingeso\tingesoMS_report\TingesoMsReportApplication.class
 com\tingeso\tingesoMS_report\Service\ReportService$2.class
+com\tingeso\tingesoMS_report\Dtos\ClientDto.class
