@@ -39,7 +39,7 @@ spring:
           predicates:
             - Path=/auth/**
         - id: user-service
-          uri: lb://tingesoMS_auth
+          uri: lb://tingeso-auth-service
           predicates:
             - Path=/user/**
           filters:

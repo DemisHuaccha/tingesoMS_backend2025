@@ -1,7 +1,7 @@
 spring:
   application:
     # Este nombre es el que usa el Config Server para buscar el .yaml en GitHub
-    name: tingesoMS_auth 
+    name: tingeso-auth-service 
   cloud:
     config:
       uri: http://${CONFIG_SERVER_HOST:localhost}:8888
