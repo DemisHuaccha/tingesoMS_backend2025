@@ -5,7 +5,7 @@ server:
 
 spring:
   application:
-    name: tingesoMS_auth
+    name: tingesoMS-auth
   datasource:
     # Cambiamos localhost por mysql-service para el entorno de cluster
     url: jdbc:mysql://${MYSQL_HOST:mysql-service}:3306/auth_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false

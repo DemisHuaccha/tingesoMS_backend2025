@@ -35,15 +35,9 @@ spring:
           lower-case-service-id: true 
       routes:
         - id: auth-service
-          uri: lb://auth-service
+          uri: lb://tingesoMS-auth
           predicates:
             - Path=/auth/**
-        - id: user-service
-          uri: lb://tingeso-auth-service
-          predicates:
-            - Path=/user/**
-          filters:
-            - RewritePath=/user/(?<segment>.*), /api/auth/$\{segment}
         - id: client-service
           uri: lb://client-service
           predicates:
