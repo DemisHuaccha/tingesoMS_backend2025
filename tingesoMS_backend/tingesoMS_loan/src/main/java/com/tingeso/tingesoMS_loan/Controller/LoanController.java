@@ -14,7 +14,7 @@ import java.util.List;
 
 @CrossOrigin(origins = "*")
 @RestController
-@RequestMapping("/api/Loan")
+@RequestMapping("/api/loan")
 public class LoanController {
 
     @Autowired
