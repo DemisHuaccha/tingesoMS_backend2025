@@ -12,7 +12,7 @@ import java.util.List;
 
 @CrossOrigin(origins = "*")
 @RestController
-@RequestMapping("/api/cardex")
+@RequestMapping("/api/kardex")
 public class CardexController {
 
     @Autowired
