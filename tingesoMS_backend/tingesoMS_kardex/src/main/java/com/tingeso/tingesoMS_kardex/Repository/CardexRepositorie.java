@@ -14,16 +14,16 @@ import java.util.List;
 public interface CardexRepositorie extends JpaRepository<Cardex,Long> {
     @Query("""
     SELECT new com.tingeso.tingesoMS_kardex.Dtos.CardexDto(
-        c.id, c.moveDate, c.typeMove, c.description, c.amount, c.quantity, c.userEmail, c.toolId, c.loanId, c.clientRut)
+        c.id, c.moveDate, c.typeMove, c.description, c.amount, c.quantity, c.userEmail, c.toolId, c.loanId, c.clientRut, c.clientId)
     FROM Cardex c
-    WHERE c.moveDate BETWEEN :startDate AND :endDate 
+    WHERE c.moveDate BETWEEN :startDate AND :endDate
     ORDER BY c.moveDate ASC
     """)
     List<CardexDto> findCardexDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
     @Query("""
     SELECT new com.tingeso.tingesoMS_kardex.Dtos.CardexDto(
-        c.id, c.moveDate, c.typeMove, c.description, c.amount, c.quantity, c.userEmail, c.toolId, c.loanId, c.clientRut) 
+        c.id, c.moveDate, c.typeMove, c.description, c.amount, c.quantity, c.userEmail, c.toolId, c.loanId, c.clientRut, c.clientId) 
     FROM Cardex c
     WHERE c.moveDate >= :startDate 
     ORDER BY c.moveDate ASC
@@ -32,7 +32,7 @@ public interface CardexRepositorie extends JpaRepository<Cardex,Long> {
 
     @Query(""" 
     SELECT new com.tingeso.tingesoMS_kardex.Dtos.CardexDto(
-        c.id, c.moveDate, c.typeMove, c.description, c.amount, c.quantity, c.userEmail, c.toolId, c.loanId, c.clientRut)
+        c.id, c.moveDate, c.typeMove, c.description, c.amount, c.quantity, c.userEmail, c.toolId, c.loanId, c.clientRut, c.clientId)
     FROM Cardex c
     WHERE c.moveDate <= :endDate 
     ORDER BY c.moveDate ASC
@@ -42,7 +42,7 @@ public interface CardexRepositorie extends JpaRepository<Cardex,Long> {
 
     @Query("""
     SELECT new com.tingeso.tingesoMS_kardex.Dtos.CardexDto(
-        c.id, c.moveDate, c.typeMove, c.description, c.amount, c.quantity, c.userEmail, c.toolId, c.loanId, c.clientRut)
+        c.id, c.moveDate, c.typeMove, c.description, c.amount, c.quantity, c.userEmail, c.toolId, c.loanId, c.clientRut, c.clientId)
     FROM Cardex c
     WHERE c.toolId =:toolId
         AND c.moveDate BETWEEN :startDate AND :endDate 
@@ -52,7 +52,7 @@ public interface CardexRepositorie extends JpaRepository<Cardex,Long> {
 
     @Query("""
     SELECT new com.tingeso.tingesoMS_kardex.Dtos.CardexDto(
-        c.id, c.moveDate, c.typeMove, c.description, c.amount, c.quantity, c.userEmail, c.toolId, c.loanId, c.clientRut) 
+        c.id, c.moveDate, c.typeMove, c.description, c.amount, c.quantity, c.userEmail, c.toolId, c.loanId, c.clientRut, c.clientId) 
     FROM Cardex c
     WHERE c.toolId =:toolId
         AND c.moveDate >= :startDate 
@@ -62,7 +62,7 @@ public interface CardexRepositorie extends JpaRepository<Cardex,Long> {
 
     @Query(""" 
     SELECT new com.tingeso.tingesoMS_kardex.Dtos.CardexDto(
-        c.id, c.moveDate, c.typeMove, c.description, c.amount, c.quantity, c.userEmail, c.toolId, c.loanId, c.clientRut)
+        c.id, c.moveDate, c.typeMove, c.description, c.amount, c.quantity, c.userEmail, c.toolId, c.loanId, c.clientRut, c.clientId)
     FROM Cardex c
     WHERE c.toolId =:toolId
         AND c.moveDate <= :endDate 
@@ -73,7 +73,7 @@ public interface CardexRepositorie extends JpaRepository<Cardex,Long> {
 
     @Query("""
     SELECT new com.tingeso.tingesoMS_kardex.Dtos.CardexDto(
-        c.id, c.moveDate, c.typeMove, c.description, c.amount, c.quantity, c.userEmail, c.toolId, c.loanId, c.clientRut)
+        c.id, c.moveDate, c.typeMove, c.description, c.amount, c.quantity, c.userEmail, c.toolId, c.loanId, c.clientRut, c.clientId)
     FROM Cardex c 
     WHERE c.toolId = :toolId 
     ORDER BY c.moveDate DESC
@@ -82,7 +82,7 @@ public interface CardexRepositorie extends JpaRepository<Cardex,Long> {
 
     @Query("""
     SELECT new com.tingeso.tingesoMS_kardex.Dtos.CardexDto(
-        c.id, c.moveDate, c.typeMove, c.description, c.amount, c.quantity, c.userEmail, c.toolId, c.loanId, c.clientRut)
+        c.id, c.moveDate, c.typeMove, c.description, c.amount, c.quantity, c.userEmail, c.toolId, c.loanId, c.clientRut, c.clientId)
     FROM Cardex c
     """)
     List<CardexDto> findAllCardex();

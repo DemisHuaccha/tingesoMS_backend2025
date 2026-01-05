@@ -1,5 +1,6 @@
 package com.tingeso.tingesoMS_client.Controller;
 
+import com.tingeso.tingesoMS_client.Dtos.CreateClientDto;
 import com.tingeso.tingesoMS_client.Entities.Client;
 import com.tingeso.tingesoMS_client.Service.ClientService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +17,7 @@ public class ClientController {
     private ClientService clientService;
 
     @PostMapping("/register")
-    public ResponseEntity<Client> register(@RequestBody Client client) {
+    public ResponseEntity<Client> register(@RequestBody CreateClientDto client) {
         return ResponseEntity.ok(clientService.register(client));
     }
     
@@ -33,15 +34,10 @@ public class ClientController {
         if (c == null) return ResponseEntity.notFound().build();
         return ResponseEntity.ok(c);
     }
-    
+
     @PutMapping("/updateStatus/{id}")
-    public ResponseEntity<Void> updateStatus(@PathVariable Long id, @RequestParam(required = false) String status) {
-        // Default to toggling or setting to Restricted/Active. 
-        // For simplicity, M2 might send strict status.
-        // Or if null, maybe logic.
-        // But RF3.2 says "Change status".
-        if(status == null) status = "RESTRICTED"; 
-        clientService.updateStatus(id, status);
+    public ResponseEntity<Void> updateStatus(@PathVariable Long id) {
+        clientService.updateStatus(id);
         return ResponseEntity.ok().build();
     }
     
@@ -50,26 +46,26 @@ public class ClientController {
         return ResponseEntity.ok(clientService.findAll());
     }
     
-    @GetMapping("/byName")
-    public ResponseEntity<List<Client>> getByName(@RequestParam String name) {
+    @GetMapping("/byName/{name}")
+    public ResponseEntity<List<Client>> getByName(@PathVariable String name) {
         return ResponseEntity.ok(clientService.findByName(name));
     }
-    
+
     @PutMapping("/update/{id}")
-    public ResponseEntity<Client> updateCustomer(@PathVariable Long id, @RequestBody Client client) {
+    public ResponseEntity<?> updateCustomer(@PathVariable Long id, @RequestBody Client client) {
         Client updated = clientService.updateCustomer(id, client);
-        if(updated == null) return ResponseEntity.notFound().build();
         return ResponseEntity.ok(updated);
     }
-    
-    @DeleteMapping("/delete/{id}")
-    public ResponseEntity<Void> deleteCustomer(@PathVariable Long id) {
-        clientService.deleteCustomer(id);
-        return ResponseEntity.noContent().build();
-    }
+
 
     @GetMapping("/search")
     public ResponseEntity<List<String>> searchRuts(@RequestParam String rut) {
         return ResponseEntity.ok(clientService.searchRuts(rut));
+    }
+
+    @PostMapping("/getByIds")
+    public ResponseEntity<List<Client>> getClientsByIds(@RequestBody List<Long> ids) {
+        List<Client> clients = clientService.findAllById(ids);
+        return ResponseEntity.ok(clients);
     }
 }

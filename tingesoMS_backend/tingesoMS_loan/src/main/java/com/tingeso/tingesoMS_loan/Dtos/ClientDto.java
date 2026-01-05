@@ -5,9 +5,12 @@ import lombok.Data;
 @Data
 public class ClientDto {
     private Long idCustomer;
-    private String rut;
+
     private String name;
     private String email;
+    private String rut;
     private String phone;
-    private String status;
+    private Boolean status; // ACTIVE, RESTRICTED
+    private String firstName;
+    private String lastName;
 }

@@ -1,10 +1,12 @@
 package com.tingeso.tingesoMS_loan.Controller;
 
+import com.tingeso.tingesoMS_loan.Dtos.ClientDto;
 import com.tingeso.tingesoMS_loan.Dtos.CreateLoanRequest;
 import com.tingeso.tingesoMS_loan.Dtos.LoanResponseDto;
 import com.tingeso.tingesoMS_loan.Dtos.ReturnLoanDto;
 import com.tingeso.tingesoMS_loan.Entities.Loan;
 import com.tingeso.tingesoMS_loan.Service.LoanServiceImpl;
+import com.tingeso.tingesoMS_loan.Services.Providers.ExternalServiceProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,11 +21,20 @@ public class LoanController {
 
     @Autowired
     private LoanServiceImpl loanService;
+    @Autowired
+    private ExternalServiceProvider externalService;
 
-    // TODO: Cardex Feign
-    // @Autowired
-    // private CardexServiceImpl cardexServiceImpl;
+    @GetMapping("/{id}")
+    public ResponseEntity<Loan> getLoanById(@PathVariable Long id) {
+        return loanService.getLoanById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
 
+    @GetMapping("/getDelayedClients")
+    public ResponseEntity<List<ClientDto>> getDelayedClients(){
+        return ResponseEntity.ok(externalService.getDelayedClientsDetails());
+    }
 
     @PostMapping("/createLoan")
     public ResponseEntity<Loan> createLoan(@RequestBody CreateLoanRequest loan){
@@ -32,33 +43,29 @@ public class LoanController {
         LocalDate deliveryDate= loan.getDeliveryDate();
         LocalDate expectedReturnDate= loan.getReturnDate();
 
-        Loan loanSave= loanService.createLoan(clientRut,toolId,deliveryDate,expectedReturnDate);
-        // TODO: Cardex
-        // cardexServiceImpl.saveCardexLoan(toolId, loan.getEmail(), loanSave);
+        Loan loanSave= externalService.createLoan(clientRut,toolId,deliveryDate,expectedReturnDate);
+
         return ResponseEntity.ok(loanSave);
     }
 
     @PutMapping("/return")
     public ResponseEntity<Loan> returnLoan(@RequestBody ReturnLoanDto loanDto) {
         LocalDate date = LocalDate.now();
-        Loan loan = loanService.returnLoan(loanDto.getLoanId(), date);
-        // cardexServiceImpl.saveCardexReturnLoan(loanDto);
+        Loan loan = loanService.returnLoan(loanDto.getLoanId(), date, loanDto);
         return ResponseEntity.ok(loan);
     }
 
     @PutMapping("/returnDamegeTool")
     public ResponseEntity<Loan> returnLoanDamage(@RequestBody ReturnLoanDto loanDto) {
         LocalDate date = LocalDate.now();
-        Loan loan = loanService.returnLoanDamageTool(loanDto.getLoanId(), date);
-        // cardexServiceImpl.saveCardexReturnLoanDamage(loanDto);
+        Loan loan = loanService.returnLoanDamageTool(loanDto.getLoanId(), date, loanDto);
         return ResponseEntity.ok(loan);
     }
 
     @PutMapping("/returnDeleteTool")
     public ResponseEntity<Loan> returnLoanDelete(@RequestBody ReturnLoanDto loanDto) {
         LocalDate date = LocalDate.now();
-        Loan loan = loanService.returnLoanDeleteTool(loanDto.getLoanId(), date);
-        // cardexServiceImpl.saveCardexReturnLoanDelete(loanDto);
+        Loan loan = loanService.returnLoanDeleteTool(loanDto.getLoanId(), date, loanDto);
         return ResponseEntity.ok(loan);
     }
 

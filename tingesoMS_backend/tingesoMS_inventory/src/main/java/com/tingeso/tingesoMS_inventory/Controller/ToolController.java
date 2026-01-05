@@ -1,7 +1,12 @@
 package com.tingeso.tingesoMS_inventory.Controller;
 
+import com.tingeso.tingesoMS_inventory.Dtos.CreateToolDto;
+import com.tingeso.tingesoMS_inventory.Dtos.GroupToolsDto;
+import com.tingeso.tingesoMS_inventory.Dtos.ToolRankingDto;
+import com.tingeso.tingesoMS_inventory.Dtos.ToolStatusDto;
 import com.tingeso.tingesoMS_inventory.Entities.Tool;
 import com.tingeso.tingesoMS_inventory.Service.ToolService;
+import com.tingeso.tingesoMS_inventory.Services.Providers.ExternalServiceProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +19,8 @@ public class ToolController {
 
     @Autowired
     private ToolService toolService;
+    @Autowired
+    private ExternalServiceProvider externalService;
 
     // Use DTO for creation to support multiple quantity
     @PostMapping("/create")
@@ -43,40 +50,46 @@ public class ToolController {
         return ResponseEntity.ok(toolService.findAllNotDelete());
     }
     
-    @PutMapping("/update/{id}")
-    public ResponseEntity<Tool> updateTool(@RequestBody com.tingeso.tingesoMS_inventory.Dtos.CreateToolDto dto, @PathVariable Long id) {
-        return ResponseEntity.ok(toolService.updateTool(dto, id));
+    @PutMapping("/update")
+    public ResponseEntity<Tool> updateTool(@RequestBody com.tingeso.tingesoMS_inventory.Dtos.CreateToolDto dto) {
+        externalService.notifyKardexUpdateTool(dto);
+        return ResponseEntity.ok(toolService.updateTool(dto));
     }
     
     @PutMapping("/updateStatus")
-    public ResponseEntity<Void> updateStatus(@RequestBody Tool tool) {
-        toolService.updateStatus(tool.getIdTool(), tool.getStatus(), tool.getUnderRepair(), tool.getDeleteStatus());
+    public ResponseEntity<Void> updateStatus(@RequestBody ToolStatusDto toolDto) {
+        externalService.notifyKardexUpdateStatusTool(toolDto);
+        toolService.updateStatusTool(toolDto);
         return ResponseEntity.ok().build();
     }
 
     @PutMapping("/underRepair")
-    public ResponseEntity<Tool> underRepairTool(@RequestBody com.tingeso.tingesoMS_inventory.Dtos.ToolStatusDto toolDto) {
-        // Mapped to generic status update logic in service, but exposed as specific endpoint
-        toolService.underRepairTool(toolDto.getIdTool(), toolDto.getUnderRepair());
+    public ResponseEntity<Tool> underRepairTool(@RequestBody CreateToolDto toolDto) {
+        toolService.underRepairTool(toolDto);
         return ResponseEntity.ok(toolService.findById(toolDto.getIdTool()));
     }
 
     @PutMapping("/deleteTool")
-    public ResponseEntity<Tool> deleteTool(@RequestBody com.tingeso.tingesoMS_inventory.Dtos.ToolStatusDto toolDto) {
-         // Mapped to specific logic
-         toolService.deleteTool(toolDto.getIdTool(), toolDto.getDeleteStatus());
+    public ResponseEntity<Tool> deleteTool(@RequestBody CreateToolDto toolDto) {
+         toolService.deleteTool(toolDto);
+         externalService.notifyKardexDeleteTool(toolDto);
          return ResponseEntity.ok(toolService.findById(toolDto.getIdTool()));
     }
 
     
     @PostMapping("/filter")
-    public ResponseEntity<List<Tool>> filterTools(@RequestParam String name) {
-        return ResponseEntity.ok(toolService.filterTools(name));
+    public List<Tool> filterTools(@RequestBody ToolRankingDto toolDto){
+        return toolService.filterTools(toolDto);
     }
     
     @GetMapping("/group")
-    public ResponseEntity<List<com.tingeso.tingesoMS_inventory.Dtos.GroupToolsDto>> groupTools() {
+    public ResponseEntity<List<GroupToolsDto>> groupTools() {
         return ResponseEntity.ok(toolService.groupTools());
+    }
+    
+    @GetMapping("/countAvailable")
+    public ResponseEntity<Integer> countAvailable(@RequestParam CreateToolDto dto) {
+        return ResponseEntity.ok(toolService.countAvailable(dto.getName(), dto.getCategory(), dto.getLoanFee()));
     }
     
     @GetMapping("/conditions")

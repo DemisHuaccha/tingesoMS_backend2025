@@ -1,5 +1,6 @@
 package com.tingeso.tingesoMS_client.Service;
 
+import com.tingeso.tingesoMS_client.Dtos.CreateClientDto;
 import com.tingeso.tingesoMS_client.Entities.Client;
 import com.tingeso.tingesoMS_client.Repository.ClientRepositorie;
 import org.junit.jupiter.api.Test;
@@ -24,17 +25,31 @@ class ClientServiceTest {
     @InjectMocks
     private ClientService clientService;
 
+    private Client createAndSaveClient(String rut, String name, String email) {
+        Client client = new Client();
+        client.setRut(rut);
+        client.setFirstName(name);
+        client.setLastName("TestLastname");
+        client.setEmail(email);
+        client.setPhone("+56911111111");
+        client.setStatus(true);
+        return clientRepo.save(client);
+    }
+
     @Test
     void register() {
-        Client client = new Client();
-        client.setRut("12345678-9");
-        when(clientRepo.save(any(Client.class))).thenReturn(client);
-        
-        Client result = clientService.register(client);
-        
-        assertNotNull(result);
-        assertEquals("12345678-9", result.getRut());
-        assertEquals("ACTIVE", result.getStatus());
+        CreateClientDto dto = new CreateClientDto();
+        dto.setFirstName("Ana");
+        dto.setLastName("Torres");
+        dto.setRut("12.345.678-9");
+        dto.setEmailC("ana@example.com"); // Según tu DTO usas emailC
+        dto.setPhone("+56912345678");
+
+        Client saved = clientService.register(dto);
+
+        assertNotNull(saved.getIdCustomer());
+        assertEquals("12.345.678-9", saved.getRut());
+        assertTrue(saved.getStatus());
     }
 
     @Test
@@ -52,13 +67,13 @@ class ClientServiceTest {
     void updateStatus() {
         Client client = new Client();
         client.setIdCustomer(1L);
-        client.setStatus("ACTIVE");
+        client.setStatus(Boolean.TRUE);
         
         when(clientRepo.findById(1L)).thenReturn(Optional.of(client));
         
-        clientService.updateStatus(1L, "RESTRICTED");
+        clientService.updateStatus(1L);
         
-        assertEquals("RESTRICTED", client.getStatus());
+        assertEquals(Boolean.FALSE, client.getStatus());
         verify(clientRepo).save(client);
     }
     
@@ -101,19 +116,7 @@ class ClientServiceTest {
         assertNotNull(result);
         assertEquals("New Name", result.getName());
     }
-    
-    @Test
-    void deleteCustomer() {
-        Client client = new Client();
-        client.setIdCustomer(1L);
-        client.setStatus("ACTIVE");
-        
-        when(clientRepo.findById(1L)).thenReturn(Optional.of(client));
-        
-        clientService.deleteCustomer(1L);
-        
-        verify(clientRepo).save(client);
-    }
+
     
     @Test
     void searchRuts() {

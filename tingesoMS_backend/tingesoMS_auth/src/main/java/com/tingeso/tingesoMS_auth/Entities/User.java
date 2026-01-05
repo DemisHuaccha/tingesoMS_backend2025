@@ -16,8 +16,12 @@ public class User {
     @Column(unique = true, nullable = false)
     private Long id;
 
-    private String name;
     private String email;
+    private String role;
     private String password;
-    private String role; // "ADMIN", "EMPLOYEE"
+    private String name;
+
+    private String firstName;
+    private String lastName;
+    private String phone;
 }

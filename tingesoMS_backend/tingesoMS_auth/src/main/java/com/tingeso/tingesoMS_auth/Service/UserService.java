@@ -1,5 +1,6 @@
 package com.tingeso.tingesoMS_auth.Service;
 
+import com.tingeso.tingesoMS_auth.Dtos.CreateUserDto;
 import com.tingeso.tingesoMS_auth.Entities.User;
 import com.tingeso.tingesoMS_auth.Repository.UserRepositorie;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,15 +29,19 @@ public class UserService {
     public java.util.List<User> findAll() {
         return userRepo.findAll();
     }
-    
-    public User updateUser(Long id, User userDetails) {
-        User user = findById(id);
-        if(user != null) {
-            user.setName(userDetails.getName());
-            user.setEmail(userDetails.getEmail());
-            // Add password logic if needed, but keeping simple for now
-            return userRepo.save(user);
+
+    public void updateUser(CreateUserDto user){
+        Optional<User> userP=userRepo.findByEmail(user.getEmail());
+        if(userP.isPresent()){
+            User oldUser=userP.get();
+            oldUser.setEmail(user.getEmail());
+            oldUser.setRole(user.getRole());
+            oldUser.setFirstName(user.getFirstName());
+            oldUser.setLastName(user.getLastName());
+            oldUser.setPhone(user.getPhone());
+            userRepo.save(oldUser);
+        }else {
+            throw new IllegalArgumentException("User with email " + user.getEmail() + " not found");
         }
-        return null;
     }
 }

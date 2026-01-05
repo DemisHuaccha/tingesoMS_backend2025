@@ -12,10 +12,11 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional
-public class LoanServiceImpl implements LoanService {
+public class LoanServiceImpl {
 
     @Autowired
     private LoanRepositorie loanRepo;
@@ -23,90 +24,53 @@ public class LoanServiceImpl implements LoanService {
     @Autowired
     private ExternalServiceProvider externalService;
 
-    @Override
     public Boolean isToolAvailableForClient(Long clientId, String toolName, String toolCategory, Integer loanFee) {
         return loanRepo.clientHasNoMatchingLoan(clientId, toolName, toolCategory, loanFee);
     }
 
-    @Override
-    public Loan createLoan(String clientRut, Long toolId, LocalDate deliveryDate, LocalDate expectedReturnDate) {
 
-        if (clientRut == null || toolId == null) {
-            throw new IllegalArgumentException("clientRut and toolId cannot be null");
+
+    // ... (rest of methods)
+
+    public List<LoanResponseDto> findAll() {
+        LocalDate today = LocalDate.now();
+        List<Loan> allLoans = loanRepo.findAll();
+        List<Loan> toSave = new ArrayList<>();
+
+        for (Loan loan : allLoans) {
+            if (Boolean.TRUE.equals(loan.getLoanStatus())) {
+                long daysLate = ChronoUnit.DAYS.between(loan.getReturnDate(), today);
+                long daysloanfee = ChronoUnit.DAYS.between(loan.getDeliveryDate(), loan.getReturnDate());
+                int daysloanfeeInt = (int) daysloanfee;
+                boolean hasPenalty = daysLate > 0;
+
+                int penaltyVal = loan.getPenaltyForDelay() != null ? loan.getPenaltyForDelay() : 0;
+                int feeVal = loan.getToolLoanFee() != null ? loan.getToolLoanFee() : 0;
+                
+                int totalPenalty = hasPenalty ? (int) (daysLate * penaltyVal) : 0;
+
+                int newPriceToPay = (feeVal * daysloanfeeInt) + totalPenalty;
+                
+                loan.setPriceToPay(newPriceToPay);
+                if (!java.util.Objects.equals(loan.getPenalty(), hasPenalty) || !java.util.Objects.equals(loan.getPenaltyTotal(), totalPenalty)) {
+                    loan.setPenalty(hasPenalty);
+                    loan.setPenaltyTotal(totalPenalty);
+                    externalService.updateClientStatus(loan.getClientId());
+                    toSave.add(loan);
+                }
+            }
         }
 
-        ClientDto client = externalService.getClientByRut(clientRut);
-        if (client == null) {
-            throw new IllegalArgumentException("Client not found");
-        }
-
-        ToolDto tool = externalService.getToolById(toolId);
-        if (tool == null) {
-            throw new IllegalArgumentException("Tool not found");
+        if (!toSave.isEmpty()) {
+            loanRepo.saveAll(toSave);
         }
         
-        // M4: GET FEE
-        ToolFeeDto fee = externalService.getToolFee(toolId);
-        Integer loanFee = fee != null ? fee.getLoanFee() : 0;
-        Integer penaltyForDelay = fee != null ? fee.getPenaltyForDelay() : 0;
-
-        if (Boolean.FALSE.equals(tool.getStatus()) || Boolean.TRUE.equals(tool.getDeleteStatus()) || Boolean.TRUE.equals(tool.getUnderRepair())){
-            throw new IllegalStateException("Tool is not available for loan");
-        }
-
-        List<Loan> defaulter = loanRepo.findByClientIdAndLoanStatusTrueAndPenaltyTrue(client.getIdCustomer());
-        if (!defaulter.isEmpty()) {
-            throw new IllegalStateException("Client with outstanding fines ");
-        }
-
-        if (isToolAvailableForClient(client.getIdCustomer(), tool.getName(), tool.getCategory(), loanFee)){
-            throw new IllegalStateException("Client has a loan with same category, name and loan Fee tool ");
-        }
-
-        List<Loan> activeLoans = loanRepo.findByClientIdAndLoanStatusTrue(client.getIdCustomer());
-        if (activeLoans.size() >= 5) {
-            throw new IllegalStateException("Client has reached the maximum of 5 active loans");
-        }
-
-        Loan loan = new Loan();
-        loan.setClientId(client.getIdCustomer());
-        loan.setToolId(tool.getIdTool());
-        loan.setDeliveryDate(deliveryDate);
-        loan.setReturnDate(expectedReturnDate);
-        loan.setLoanStatus(true);
-        loan.setPenalty(false);
-        loan.setPenaltyTotal(0);
-        
-        loan.setClientRut(client.getRut());
-        loan.setToolName(tool.getName());
-        loan.setToolCategory(tool.getCategory());
-        loan.setToolLoanFee(loanFee); // Stored snapshot
-
-        loanRepo.save(loan);
-
-        ToolStatusDto toolStatus = new ToolStatusDto();
-        toolStatus.setIdTool(tool.getIdTool());
-        toolStatus.setStatus(true); 
-        externalService.updateToolStatus(toolStatus);
-        
-        // M5: Log to Kardex
-        CardexDto log = new CardexDto();
-        log.setMoveDate(LocalDate.now());
-        log.setTypeMove("LOAN_CREATED");
-        log.setDescription("Loan created for tool " + tool.getName());
-        log.setAmount(loanFee);
-        log.setQuantity(1);
-        log.setUserEmail("system"); // Or extract from context if auth passed
-        log.setToolId(tool.getIdTool());
-        log.setLoanId(loan.getIdLoan());
-        log.setClientRut(client.getRut());
-        externalService.logCardex(log);
-
-        return loan;
+        return loanRepo.findAllWithClientAndToolIds();
     }
 
-    @Override
-    public Loan returnLoan(Long loanId, LocalDate actualReturnDate) {
+
+    @Transactional
+    public Loan returnLoan(Long loanId, LocalDate actualReturnDate, ReturnLoanDto dto) {
         Loan loan = loanRepo.findById(loanId)
                 .orElseThrow(() -> new IllegalArgumentException("Loan not found"));
 
@@ -114,16 +78,15 @@ public class LoanServiceImpl implements LoanService {
             throw new IllegalStateException("Loan already returned");
         }
 
+        // Obtener datos de la herramienta desde el microservicio de Inventario
+        ToolDto tool = Optional.ofNullable(externalService.getToolById(loan.getToolId()))
+                .orElseThrow(() -> new IllegalStateException("Tool info not found"));
+
         loan.setLoanStatus(false);
-        
-        // Try fetch fee again for penalty or use snapshot? Entity doesn't have penalty snapshot.
-        // Fetch fee.
-        ToolFeeDto fee = externalService.getToolFee(loan.getToolId());
-        int penaltyVal = fee != null ? fee.getPenaltyForDelay() : 0;
 
         long daysLate = ChronoUnit.DAYS.between(loan.getReturnDate(), actualReturnDate);
         if (daysLate > 0) {
-            int multa = (int) (daysLate * penaltyVal);
+            int multa = (int) (daysLate * tool.getPenaltyForDelay());
             loan.setPenalty(true);
             loan.setPenaltyTotal(multa);
         } else {
@@ -131,118 +94,110 @@ public class LoanServiceImpl implements LoanService {
             loan.setPenaltyTotal(0);
         }
 
-        ToolStatusDto toolStatus = new ToolStatusDto();
-        toolStatus.setIdTool(loan.getToolId());
-        toolStatus.setStatus(false); 
-        externalService.updateToolStatus(toolStatus);
+        // Liberar herramienta en Inventory MS
+        ToolDto status= new ToolDto();
+        status.setIdTool(loan.getToolId());
+        externalService.updateToolStatus(status);
 
-        loanRepo.save(loan);
+        loan.setPriceToPay(loan.getPriceToPay());
+
+        // Habilitar cliente en Client MS
         externalService.updateClientStatus(loan.getClientId());
-        
-        // M5 Log
-         CardexDto log = new CardexDto();
-        log.setMoveDate(LocalDate.now());
-        log.setTypeMove("LOAN_RETURNED");
-        log.setDescription("Loan returned");
-        log.setAmount(loan.getPriceToPay());
-        log.setQuantity(1);
-        log.setUserEmail("system");
-        log.setToolId(loan.getToolId());
-        log.setLoanId(loan.getIdLoan());
-        log.setClientRut(loan.getClientRut());
-        externalService.logCardex(log);
-        
+        externalService.notifyKardexReturnLoan(dto);
+
         return loanRepo.save(loan);
     }
-    
-    @Override
-    public Loan returnLoanDamageTool(Long loanId, LocalDate actualReturnDate) {
-         Loan loan = loanRepo.findById(loanId)
+
+    @Transactional
+    public Loan returnLoanDamageTool(Long loanId, LocalDate actualReturnDate, ReturnLoanDto dto) {
+        Loan loan = loanRepo.findById(loanId)
                 .orElseThrow(() -> new IllegalArgumentException("Loan not found"));
-        if (!loan.getLoanStatus()) throw new IllegalStateException("Loan already returned");
+
+        if (!loan.getLoanStatus()) {
+            throw new IllegalStateException("Loan already returned");
+        }
+
+        ToolDto tool = Optional.ofNullable(externalService.getToolById(loan.getToolId()))
+                .orElseThrow(() -> new IllegalStateException("Tool info not found"));
+
         loan.setLoanStatus(false);
-        
-        ToolFeeDto fee = externalService.getToolFee(loan.getToolId());
-        int penaltyForDelay = fee!=null ? fee.getPenaltyForDelay() : 0;
-        
-        // Fetch Tool from Inventory to get damage value
-        ToolDto tool = externalService.getToolById(loan.getToolId());
-        int damageValue = tool!=null ? tool.getDamageValue() : 0;
 
         long daysLate = ChronoUnit.DAYS.between(loan.getReturnDate(), actualReturnDate);
-        int delayPenalty = (daysLate > 0) ? (int) (daysLate * penaltyForDelay) : 0;
-        int totalPenalty = delayPenalty + damageValue;
+
+        int delayPenalty = (daysLate > 0) ? (int) (daysLate * tool.getPenaltyForDelay()) : 0;
+        int totalPenalty = delayPenalty + tool.getDamageValue();
 
         loan.setPenalty(true);
         loan.setPenaltyTotal(totalPenalty);
-        
-        ToolStatusDto toolStatus = new ToolStatusDto();
-        toolStatus.setIdTool(loan.getToolId());
-        toolStatus.setStatus(false); 
-        externalService.updateToolStatus(toolStatus);
+
+        ToolDto status= new ToolDto();
+        status.setIdTool(loan.getToolId());
+        // Actualizar herramienta: status=true, underRepair=true en Inventory MS
+        externalService.updateToolDamageStatus(status);
 
         int currentPrice = loan.getPriceToPay() != null ? loan.getPriceToPay() : 0;
-        loan.setPriceToPay(currentPrice + damageValue);
-        
+        loan.setPriceToPay(currentPrice + tool.getDamageValue());
+
         externalService.updateClientStatus(loan.getClientId());
+        externalService.notifyKardexReturnLoanDamage(dto);
+
         return loanRepo.save(loan);
     }
 
-    @Override
-    public Loan returnLoanDeleteTool(Long loanId, LocalDate actualReturnDate) {
-         Loan loan = loanRepo.findById(loanId)
+    @Transactional
+    public Loan returnLoanDeleteTool(Long loanId, LocalDate actualReturnDate, ReturnLoanDto dto) {
+        Loan loan = loanRepo.findById(loanId)
                 .orElseThrow(() -> new IllegalArgumentException("Loan not found"));
-        if (!loan.getLoanStatus()) throw new IllegalStateException("Loan already returned");
+
+        if (!loan.getLoanStatus()) {
+            throw new IllegalStateException("Loan already returned");
+        }
+
+        ToolDto tool = Optional.ofNullable(externalService.getToolById(loan.getToolId()))
+                .orElseThrow(() -> new IllegalStateException("Tool info not found"));
+
         loan.setLoanStatus(false);
-        
-        ToolFeeDto fee = externalService.getToolFee(loan.getToolId());
-        int penaltyForDelay = fee!=null ? fee.getPenaltyForDelay() : 0;
-        
-        // Fetch Tool from Inventory to get replacement value
-        ToolDto tool = externalService.getToolById(loan.getToolId());
-        int replacementValue = tool!=null ? tool.getReplacementValue() : 0;
 
         long daysLate = ChronoUnit.DAYS.between(loan.getReturnDate(), actualReturnDate);
-        int delayPenalty = (daysLate > 0) ? (int) (daysLate * penaltyForDelay) : 0;
-        int totalPenalty = delayPenalty + replacementValue;
+
+        int delayPenalty = (daysLate > 0) ? (int) (daysLate * tool.getPenaltyForDelay()) : 0;
+        int totalPenalty = delayPenalty + tool.getReplacementValue();
 
         loan.setPenalty(true);
         loan.setPenaltyTotal(totalPenalty);
-        
-        ToolStatusDto toolStatus = new ToolStatusDto();
-        toolStatus.setIdTool(loan.getToolId());
-        toolStatus.setStatus(false); 
-        externalService.updateToolStatus(toolStatus);
+
+        ToolDto status= new ToolDto();
+        status.setIdTool(loan.getToolId());
+
+        // Actualizar herramienta: status=false, underRepair=false, deleteStatus=false
+        externalService.returnLoanDeleteTool(status);
 
         int currentPrice = loan.getPriceToPay() != null ? loan.getPriceToPay() : 0;
-        loan.setPriceToPay(currentPrice + replacementValue);
-        
+        loan.setPriceToPay(currentPrice + tool.getReplacementValue());
+
         externalService.updateClientStatus(loan.getClientId());
+        externalService.notifyKardexReturnLoanDelete(dto);
+
         return loanRepo.save(loan);
     }
 
-    @Override
-    public List<LoanResponseDto> findAll() {
-        return loanRepo.findAllWithClientAndToolIds();
-    }
-
-    @Override
     public List<Long> findClientDelayed(){
         return loanRepo.findClientIdsWithDelayedLoans();
     }
-    
-    @Override
+
     public List<Loan> findActiveAndOnTimeLoans() {
         return loanRepo.findActiveAndOnTimeLoans();
     }
 
-    @Override
     public List<Loan> findActiveAndDelayedLoans() {
         return loanRepo.findActiveAndDelayedLoans();
     }
 
-    @Override
     public List<ToolRankingDto> findMostLoanedToolsWithDetails() {
         return loanRepo.findMostLoanedToolsWithDetails();
+    }
+
+    public Optional<Loan> getLoanById(Long id) {
+        return loanRepo.findById(id);
     }
 }

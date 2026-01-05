@@ -1,12 +1,15 @@
 package com.tingeso.tingesoMS_inventory.Service;
 
+import com.tingeso.tingesoMS_inventory.Dtos.*;
 import com.tingeso.tingesoMS_inventory.Entities.Tool;
 import com.tingeso.tingesoMS_inventory.Repository.ToolRepositorie;
-import com.tingeso.tingesoMS_inventory.Dtos.CreateToolDto;
+import com.tingeso.tingesoMS_inventory.Services.Providers.ExternalServiceProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Arrays;
+import java.util.Optional;
 
 @Service
 public class ToolService {
@@ -14,33 +17,53 @@ public class ToolService {
     @Autowired
     private ToolRepositorie toolRepo;
 
+    @Autowired
+    private ExternalServiceProvider externalService;
+
     public Tool save(CreateToolDto dto) {
-        // Basic batch creation. Returns the last created to simplify return type, or we could change generic.
-        // Logic: if stock > 1, create multiple.
-        int qty = dto.getStock() > 0 ? dto.getStock() : 1;
-        Tool lastTool = null;
-        for (int i = 0; i < qty; i++) {
+
+        Optional<DtoClient> resultado = externalService.getUserByEmail(dto.getEmail());
+
+        if(!resultado.isPresent()){
+            throw new IllegalArgumentException("User with email " + dto.getEmail() + " not found");
+        }
+
+        for(int i=1; i<dto.getQuantity();i++) {
             Tool tool = new Tool();
+            tool.setStatus(Boolean.TRUE);
+            tool.setDeleteStatus(Boolean.FALSE);
+            tool.setUnderRepair(Boolean.FALSE);
+            /*-------------------------------*/
             tool.setName(dto.getName());
             tool.setCategory(dto.getCategory());
-            // Default fields as per new DTO
-            if(dto.getInitialCondition() != null) {
-                tool.setInitialCondition(dto.getInitialCondition()); 
-            }
-            tool.setStatus(dto.getStatus() != null ? dto.getStatus() : true);
-            tool.setUnderRepair(dto.getUnderRepair() != null ? dto.getUnderRepair() : false);
-            tool.setDeleteStatus(dto.getDeleteStatus() != null ? dto.getDeleteStatus() : false);
-            
-            lastTool = toolRepo.save(tool);
+            tool.setInitialCondition(dto.getInitialCondition());
+            tool.setLoanFee(dto.getLoanFee());
+            tool.setPenaltyForDelay(dto.getPenaltyForDelay());
+            tool.setReplacementValue(dto.getReplacementValue());
+            tool.setDescription(dto.getDescription());
+            tool.setDamageValue(dto.getDamageValue());
+            toolRepo.save(tool);
         }
+        /*--------------------------------*/
+
+        Tool lastTool = new Tool();
+        lastTool.setStatus(Boolean.TRUE);
+        lastTool.setDeleteStatus(Boolean.FALSE);
+        lastTool.setUnderRepair(Boolean.FALSE);
+        /*-------------------------------*/
+        lastTool.setName(dto.getName());
+        lastTool.setCategory(dto.getCategory());
+        lastTool.setInitialCondition(dto.getInitialCondition());
+        lastTool.setLoanFee(dto.getLoanFee());
+        lastTool.setPenaltyForDelay(dto.getPenaltyForDelay());
+        lastTool.setReplacementValue(dto.getReplacementValue());
+        lastTool.setDescription(dto.getDescription());
+        lastTool.setDamageValue(dto.getDamageValue());
+        toolRepo.save(lastTool);
+        externalService.notifyKardexTool(dto);
         return lastTool;
     }
 
-    // Overload for direct Entity save if needed
-    public Tool save(Tool tool) {
-        return toolRepo.save(tool);
-    }
-    
     public Tool findById(Long id) {
         return toolRepo.findById(id).orElse(null);
     }
@@ -57,58 +80,85 @@ public class ToolService {
         return toolRepo.findByDeleteStatusFalse();
     }
 
-    public Tool updateTool(CreateToolDto dto, Long id) {
-        Tool t = findById(id);
-        if(t != null) {
-            t.setName(dto.getName());
-            t.setCategory(dto.getCategory());
-            // Update other fields if DTO has them
-            return toolRepo.save(t);
+    public Tool updateTool(CreateToolDto toolDto){
+        Tool oldTool = toolRepo.findById(toolDto.getIdTool()).orElse(null);
+        if(oldTool!=null){
+            oldTool.setName(toolDto.getName());
+            oldTool.setCategory(toolDto.getCategory());
+            oldTool.setInitialCondition(toolDto.getInitialCondition());
+
+            oldTool.setLoanFee(toolDto.getLoanFee());
+            oldTool.setPenaltyForDelay(toolDto.getPenaltyForDelay());
+            oldTool.setReplacementValue(toolDto.getReplacementValue());
+            oldTool.setDamageValue(toolDto.getDamageValue());
+            oldTool.setDescription(toolDto.getDescription());
+
+            externalService.notifyKardexUpdateTool(toolDto);
+            toolRepo.save(oldTool);
+        }else {
+            return null; 
         }
-        return null;
+        return oldTool;
     }
     
-    public void updateStatus(Long id, Boolean status, Boolean underRepair, Boolean delete) {
-        Tool t = findById(id);
-        if (t != null) {
-            if(status != null) t.setStatus(status);
-            if(underRepair != null) t.setUnderRepair(underRepair);
-            if(delete != null) t.setDeleteStatus(delete);
-            toolRepo.save(t);
+    public void updateStatusTool(ToolStatusDto toolDto){
+        Tool tool = toolRepo.findById(toolDto.getIdTool()).orElse(null);
+        if(tool!=null){
+             if(Boolean.TRUE.equals(toolDto.getStatus())){
+                 tool.setStatus(Boolean.FALSE);
+             }
+             else {
+                 tool.setStatus(Boolean.TRUE);
+             }
         }
+        externalService.notifyKardexUpdateStatusTool(toolDto);
+        toolRepo.save(tool);
     }
     
-    // Status Toggles logic
-    public void updateStatusTool(Long id, Boolean status) {
-        // Toggle logic from Monolith: "If param is same as current, invert it?" Or just set it?
-        // Monolith test comment: "El servicio invierte el valor si coincide."
-        // Let's implement set directly for clarity unless strict parity needed. 
-        // Logic: Set status.
-        updateStatus(id, status, null, null);
+    public void underRepairTool(CreateToolDto toolDto){
+        Tool tool = toolRepo.findById(toolDto.getIdTool()).orElse(null);
+        if(tool!=null){
+            if(Boolean.FALSE.equals(toolDto.getUnderRepair())) { 
+                 tool.setUnderRepair(Boolean.TRUE);
+            }
+            else {
+                tool.setUnderRepair(Boolean.FALSE);
+            }
+        }
+        externalService.notifyKardexRepairTool(toolDto);
+        toolRepo.save(tool);
     }
     
-    public void underRepairTool(Long id, Boolean status) {
-        updateStatus(id, null, status, null);
+    public void deleteTool(CreateToolDto toolDto){
+        Tool tool = toolRepo.findById(toolDto.getIdTool()).orElse(null);
+        if(tool!=null){
+            if(Boolean.TRUE.equals(toolDto.getDeleteStatus())){
+                tool.setDeleteStatus(Boolean.FALSE);
+            }
+            else {
+                tool.setDeleteStatus(Boolean.TRUE);
+            }
+        }
+        externalService.notifyKardexDeleteTool(toolDto);
+        toolRepo.save(tool);
     }
     
-    public void deleteTool(Long id, Boolean status) {
-        updateStatus(id, null, null, status);
+    public List<Tool> filterTools(ToolRankingDto toolDto) {
+        // Strict monolith filtering using local columns
+        return toolRepo.findByNameCategoryAndLoanFee(toolDto.getNameTool(), toolDto.getCategoryTool(), toolDto.getFeeTool());
     }
     
-    public List<Tool> filterTools(String name) {
-        // Simple filter example
-         return toolRepo.findAll().stream()
-                .filter(t -> t.getName().toLowerCase().contains(name.toLowerCase()))
-                .toList();
-    }
-    
-    public List<com.tingeso.tingesoMS_inventory.Dtos.GroupToolsDto> groupTools() {
+    public List<GroupToolsDto> groupTools() {
         return toolRepo.groupTools();
     }
     
     public List<String> getConditions() {
-        return java.util.Arrays.stream(com.tingeso.tingesoMS_inventory.Dtos.InitialCondition.values())
+        return Arrays.stream(InitialCondition.values())
                 .map(Enum::name)
                 .toList();
+    }
+    
+    public int countAvailable(String name, String category, Integer loanFee) {
+        return toolRepo.countAvailableByNameAndCategory(name, category, loanFee);
     }
 }

@@ -43,6 +43,9 @@ public class Loan {
     @Column(name = "tool_loan_fee")
     private Integer toolLoanFee;
 
+    @Column(name = "penalty_field") // Using distinct name to avoid keyword issues if any
+    private Integer penaltyForDelay;
+
     //True es que esta activa
     //False es que ya fue completada(Es decir no se tiene en cuenta)
     @Column(name = "loan_status")

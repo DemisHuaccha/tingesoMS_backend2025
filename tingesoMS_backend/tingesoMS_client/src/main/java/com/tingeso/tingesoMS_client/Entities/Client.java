@@ -19,5 +19,9 @@ public class Client {
     private String email;
     private String rut;
     private String phone;
-    private String status; // ACTIVE, RESTRICTED
+    private Boolean status; // ACTIVE, RESTRICTED
+    
+    // Strict Monolith Fields
+    private String firstName;
+    private String lastName;
 }

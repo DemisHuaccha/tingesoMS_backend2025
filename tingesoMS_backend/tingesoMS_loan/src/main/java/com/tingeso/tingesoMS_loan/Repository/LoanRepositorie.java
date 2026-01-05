@@ -37,4 +37,6 @@ public interface LoanRepositorie extends JpaRepository<Loan,Long> {
     @Query("SELECT COUNT(l) >= 1 FROM Loan l WHERE l.clientId = :clientId AND l.loanStatus = true AND l.toolName = :toolName AND l.toolCategory = :toolCategory AND l.toolLoanFee = :toolLoanFee")
     boolean clientHasNoMatchingLoan(@Param("clientId") Long clientId, @Param("toolName") String toolName, @Param("toolCategory") String toolCategory, @Param("toolLoanFee") Integer toolLoanFee);
 
+    @Query("SELECT DISTINCT l.clientId FROM Loan l WHERE l.loanStatus = true AND l.returnDate < CURRENT_DATE")
+    List<Long> findDelayedClientIds();
 }

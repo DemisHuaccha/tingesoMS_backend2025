@@ -1,20 +1,35 @@
 package com.tingeso.tingesoMS_client.Service;
 
+import com.tingeso.tingesoMS_client.Dtos.CreateClientDto;
 import com.tingeso.tingesoMS_client.Entities.Client;
 import com.tingeso.tingesoMS_client.Repository.ClientRepositorie;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ClientService {
     @Autowired
     private ClientRepositorie clientRepo;
 
-    public Client register(Client client) {
-        client.setStatus("ACTIVE");
-        return clientRepo.save(client);
+
+    public Client register(CreateClientDto clientDto) {
+        Optional<Client> clientP=clientRepo.findByRut(clientDto.getRut());
+        if(clientP.isPresent()){
+            throw new IllegalArgumentException("Client with rut " + clientDto.getRut() + " already exists");
+        }
+        Client client = new Client();
+        client.setRut(clientDto.getRut());
+        client.setFirstName(clientDto.getFirstName());
+        client.setLastName(clientDto.getLastName());
+        client.setEmail(clientDto.getEmailC());
+        client.setPhone(clientDto.getPhone());
+        client.setStatus(Boolean.TRUE);
+        clientRepo.save(client);
+        return client;
     }
     
     public Client findByRut(String rut) {
@@ -28,13 +43,17 @@ public class ClientService {
     public List<Client> findAll() {
         return clientRepo.findAll();
     }
-    
-    public void updateStatus(Long id, String status) {
-        Client c = clientRepo.findById(id).orElse(null);
-        if (c != null) {
-            c.setStatus(status);
-            clientRepo.save(c);
+
+    public Client updateStatus(Long id) {
+        Client client = clientRepo.findById(id).orElse(null);
+        if (client != null) {
+            if (client.getStatus().equals(Boolean.TRUE)) {
+                client.setStatus(Boolean.FALSE);
+            } else {
+                client.setStatus(Boolean.TRUE);
+            }
         }
+        return clientRepo.save(client);
     }
     
     public List<Client> findByName(String name) {
@@ -52,40 +71,28 @@ public class ClientService {
         }
         return null;
     }
-    
-    public void deleteCustomer(Long id) {
-        // Soft delete: set status to INACTIVE or similar? 
-        // Logic from Monolith: "delete" might mean really delete or soft.
-        // Given typically safe practices, soft delete.
-        // Let's assume soft delete "INACTIVE" or "DELETED".
-        updateStatus(id, "DELETED");
-    }
-    
-    public List<String> searchRuts(String rut) {
-        return clientRepo.findByRutContaining(rut).stream()
+
+    public List<String> searchRuts(String partialRut) {
+        return clientRepo.findByRutContainingIgnoreCase(partialRut)
+                .stream()
                 .map(Client::getRut)
                 .toList();
     }
     
     // Inter-service communication mocked/simulated
     public List<Client> findDelayedClient() {
-        // In Microservice architecture, this should call Loan Service.
-        // Assuming Loan Service endpoint exists: GET /api/loan/delayed/clients (Ids)
-        // For this task, we assume we get a list of IDs. 
-        // Example logic with RestTemplate (commented out as no eureka/port known):
-        // List<Long> ids = restTemplate.getForObject("http://tingesoMS-loan/api/loan/delayed/clients", List.class);
-        // return clientRepo.findAllById(ids);
-        
-        // Returning empty list to satisfy compilation + architecture pattern.
-        // To implement properly requires running services.
+
         return java.util.Collections.emptyList();
     }
     
     public void restrictClientsWithDelayedLoans() {
         // Fetch delayed clients
         List<Client> delayed = findDelayedClient();
-        for(Client c : delayed) {
-            updateStatus(c.getIdCustomer(), "RESTRICTED"); // or false
-        }
+
     }
+
+    public List<Client> findAllById(List<Long> ids) {
+        return clientRepo.findAllById(ids);
+    }
+
 }

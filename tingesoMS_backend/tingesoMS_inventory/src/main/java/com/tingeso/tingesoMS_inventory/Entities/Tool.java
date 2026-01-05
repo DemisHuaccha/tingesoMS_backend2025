@@ -40,5 +40,18 @@ public class Tool {
     @JsonProperty("initialCondition")
     private com.tingeso.tingesoMS_inventory.Dtos.InitialCondition initialCondition;
 
-    // Prices moved to M4
+    @JsonProperty("loanFee")
+    private Integer loanFee;
+    
+    @JsonProperty("penaltyForDelay")
+    private Integer penaltyForDelay;
+    
+    @JsonProperty("replacementValue")
+    private Integer replacementValue;
+    
+    @JsonProperty("damageValue")
+    private Integer damageValue;
+    
+    @JsonProperty("description")
+    private String description;
 }

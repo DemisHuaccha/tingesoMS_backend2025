@@ -1,5 +1,6 @@
 package com.tingeso.tingesoMS_auth.Controller;
 
+import com.tingeso.tingesoMS_auth.Dtos.CreateUserDto;
 import com.tingeso.tingesoMS_auth.Entities.User;
 import com.tingeso.tingesoMS_auth.Service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,12 +40,11 @@ public class UserController {
     public ResponseEntity<java.util.List<User>> getAll() {
         return ResponseEntity.ok(userService.findAll());
     }
-    
-    @PutMapping("/update/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
-        User updated = userService.updateUser(id, user);
-        if (updated == null) return ResponseEntity.notFound().build();
-        return ResponseEntity.ok(updated);
+
+    @PutMapping("/updateUser")
+    public ResponseEntity<CreateUserDto> updateUser(@RequestBody CreateUserDto user) {
+        userService.updateUser(user);
+        return ResponseEntity.ok(user);
     }
 
     @GetMapping("/getByEmail")

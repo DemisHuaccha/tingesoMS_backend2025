@@ -4,6 +4,7 @@ import com.tingeso.tingesoMS_client.Entities.Client;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -13,4 +14,6 @@ public interface ClientRepositorie extends JpaRepository<Client, Long> {
     java.util.List<Client> findByName(String name);
     
     java.util.List<Client> findByRutContaining(String rut);
+
+    List<Client> findByRutContainingIgnoreCase(String rut);
 }

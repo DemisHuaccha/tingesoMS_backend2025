@@ -5,9 +5,12 @@ import java.time.LocalDate;
 
 @Data
 public class CreateUserDto {
-    private String name;
     private String email;
+    private String role;
     private String password;
-    private LocalDate birthday;
-    private Boolean admin;
+    private String name;
+
+    private String firstName;
+    private String lastName;
+    private String phone;
 }
