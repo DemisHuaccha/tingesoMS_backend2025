@@ -18,7 +18,7 @@ public class ExternalServiceProvider {
     private RestTemplate restTemplate;
 
     // --- CONSTANTES DE URL BASE ---
-    private final String AUTH_URL = "http://tingesoMS-auth/api/auth";
+    private final String AUTH_URL = "http://tingesoMS-auth/api/auth/";
     private final String INVENTORY_TOOL_URL = "http://tingesoMS_inventory/api/inventory/";
     private final String LOAN_URL = "http://tingesoMS-loan/api/loan/";
 
