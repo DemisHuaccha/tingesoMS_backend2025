@@ -19,7 +19,7 @@ public class ExternalServiceProvider {
 
     // --- CONSTANTES DE URL BASE ---
     private final String AUTH_URL = "http://tingesoMS-auth/api/auth/";
-    private final String INVENTORY_TOOL_URL = "http://tingesoMS_inventory/api/inventory/";
+    private final String INVENTORY_TOOL_URL = "http://tingesoMS-inventory/api/inventory/";
     private final String LOAN_URL = "http://tingesoMS-loan/api/loan/";
 
     //private final String AUTH_URL = "http://localhost:6001/api/auth/";
