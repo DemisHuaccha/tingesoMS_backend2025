@@ -24,10 +24,10 @@ public class ExternalServiceProvider {
     private RestTemplate restTemplate; // CORRECCIÓN: Cambiado de RestClientConfig a RestTemplate
 
     // --- CONSTANTES DE URL BASE ---
-    private final String CLIENT_URL = "http://tingesoMS_client/api/client/";
-    private final String INVENTORY_URL = "http://tingesoMS_inventory/api/inventory/";
-    private final String TOOL_URL = "http://tingesoMS_inventory/api/inventory/";
-    private final String FEE_URL = "http://tingesoMS_fee/api/fee/";
+    private final String CLIENT_URL = "http://tingesoMS-client/api/client/";
+    private final String INVENTORY_URL = "http://tingesoMS-inventory/api/inventory/";
+    private final String TOOL_URL = "http://tingesoMS-inventory/api/inventory/";
+    private final String FEE_URL = "http://tingesoMS-fee/api/fee/";
     private final String KARDEX_URL = "http://tingeso-kardex/api/kardex/";
 
     //private final String CLIENT_URL = "http://localhost:6002/api/client/";

@@ -20,8 +20,8 @@ public class ExternalServiceProvider {
     //private final String KARDEX_URL = "http://tingeso-kardex/api/kardex/";
     //private final String KARDEX_URL = "http://localhost:6005/api/kardex/";
 
-    private final String KARDEX_URL = "http://tingeso-kardex/api/kardex/";
-    private final String USER_URL = "http://tingeso-auth/api/auth/";
+    private final String KARDEX_URL = "http://tingesoMS-kardex/api/kardex/";
+    private final String USER_URL = "http://tingesoMS-auth/api/auth/";
 
     //private final String KARDEX_URL = "http://tingeso-kardex/api/kardex/";
     //private final String KARDEX_URL = "http://localhost:6005/api/kardex/";

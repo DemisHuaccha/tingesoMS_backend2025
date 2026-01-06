@@ -17,8 +17,8 @@ public class ExternalServiceProvider {
     private RestTemplate restTemplate;
 
     // --- CONSTANTES DE URL BASE ---
-    private final String AUTH_URL = "http://tingeso-auth/api/auth";
-    private final String KARDEX_URL = "http://tingeso-kardex/api/kardex/";
+    private final String AUTH_URL = "http://tingesoMS-auth/api/auth";
+    private final String KARDEX_URL = "http://tingesoMS-kardex/api/kardex/";
 
     //private final String AUTH_URL = "http://localhost:6001/api/auth/";
     //private final String KARDEX_URL = "http://localhost:6005/api/kardex/";

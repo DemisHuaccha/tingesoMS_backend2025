@@ -13,7 +13,7 @@ public class ExternalServiceProvider {
     @Autowired
     private RestTemplate restTemplate;
 
-    private static final String INVENTORY_SERVICE_URL = "http://tingeso-inventory/api/inventory";
+    private static final String INVENTORY_SERVICE_URL = "http://tingesoMS-inventory/api/inventory";
     //private static final String INVENTORY_SERVICE_URL = "http://localhost:6004/api/inventory";
 
     public void updateToolInInventory(DtoTool dtoTool) {
