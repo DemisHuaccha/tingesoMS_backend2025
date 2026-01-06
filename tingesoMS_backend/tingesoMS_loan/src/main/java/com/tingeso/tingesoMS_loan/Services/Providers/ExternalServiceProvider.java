@@ -28,7 +28,7 @@ public class ExternalServiceProvider {
     private final String INVENTORY_URL = "http://tingesoMS-inventory/api/inventory/";
     private final String TOOL_URL = "http://tingesoMS-inventory/api/inventory/";
     private final String FEE_URL = "http://tingesoMS-fee/api/fee/";
-    private final String KARDEX_URL = "http://tingeso-kardex/api/kardex/";
+    private final String KARDEX_URL = "http://tingesoMS-kardex/api/kardex/";
 
     //private final String CLIENT_URL = "http://localhost:6002/api/client/";
     //private final String INVENTORY_URL = "http://localhost:6004/api/inventory/";
