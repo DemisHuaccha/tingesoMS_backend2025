@@ -24,7 +24,7 @@ public class ToolController {
 
     // Use DTO for creation to support multiple quantity
     @PostMapping("/create")
-    public ResponseEntity<Tool> createTool(@RequestBody com.tingeso.tingesoMS_inventory.Dtos.CreateToolDto dto) {
+    public ResponseEntity<Tool> createTool(@RequestBody CreateToolDto dto) {
         return ResponseEntity.ok(toolService.save(dto));
     }
 
@@ -51,14 +51,12 @@ public class ToolController {
     }
     
     @PutMapping("/update")
-    public ResponseEntity<Tool> updateTool(@RequestBody com.tingeso.tingesoMS_inventory.Dtos.CreateToolDto dto) {
-        externalService.notifyKardexUpdateTool(dto);
+    public ResponseEntity<Tool> updateTool(@RequestBody CreateToolDto dto) {
         return ResponseEntity.ok(toolService.updateTool(dto));
     }
     
     @PutMapping("/updateStatus")
     public ResponseEntity<Void> updateStatus(@RequestBody ToolStatusDto toolDto) {
-        externalService.notifyKardexUpdateStatusTool(toolDto);
         toolService.updateStatusTool(toolDto);
         return ResponseEntity.ok().build();
     }
@@ -72,7 +70,6 @@ public class ToolController {
     @PutMapping("/deleteTool")
     public ResponseEntity<Tool> deleteTool(@RequestBody CreateToolDto toolDto) {
          toolService.deleteTool(toolDto);
-         externalService.notifyKardexDeleteTool(toolDto);
          return ResponseEntity.ok(toolService.findById(toolDto.getIdTool()));
     }
 
@@ -88,8 +85,8 @@ public class ToolController {
     }
     
     @GetMapping("/countAvailable")
-    public ResponseEntity<Integer> countAvailable(@RequestParam CreateToolDto dto) {
-        return ResponseEntity.ok(toolService.countAvailable(dto.getName(), dto.getCategory(), dto.getLoanFee()));
+    public ResponseEntity<Integer> countAvailable(@RequestParam String name, @RequestParam String category, @RequestParam Integer loanFee) {
+        return ResponseEntity.ok(toolService.countAvailable(name, category, loanFee));
     }
     
     @GetMapping("/conditions")

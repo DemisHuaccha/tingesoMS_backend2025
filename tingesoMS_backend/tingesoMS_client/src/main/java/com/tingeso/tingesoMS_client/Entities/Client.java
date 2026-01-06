@@ -19,7 +19,7 @@ public class Client {
     private String email;
     private String rut;
     private String phone;
-    private Boolean status; // ACTIVE, RESTRICTED
+    private Boolean status; // ACTIVE (true), RESTRICTED(false)
     
     // Strict Monolith Fields
     private String firstName;

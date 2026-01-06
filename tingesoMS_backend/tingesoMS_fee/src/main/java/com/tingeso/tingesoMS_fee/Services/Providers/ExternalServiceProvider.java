@@ -13,12 +13,15 @@ public class ExternalServiceProvider {
     @Autowired
     private RestTemplate restTemplate;
 
+    private static final String INVENTORY_SERVICE_URL = "http://tingeso-inventory/api/inventory";
+    //private static final String INVENTORY_SERVICE_URL = "http://localhost:6004/api/inventory";
+
     public void updateToolInInventory(DtoTool dtoTool) {
         try {
-             restTemplate.put("http://tingeso-inventory/api/inventory/update", dtoTool);
+            restTemplate.put(INVENTORY_SERVICE_URL + "/update", dtoTool);
         } catch (Exception e) {
             System.err.println("Error forwarding to Inventory: " + e.getMessage());
-            throw new RuntimeException("Failed to update Inventory from Fee Service");
+            throw new RuntimeException("Failed to update Inventory from Fee Service", e);
         }
     }
 }

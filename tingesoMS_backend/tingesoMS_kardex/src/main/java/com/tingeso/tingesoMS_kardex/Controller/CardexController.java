@@ -43,12 +43,9 @@ public class CardexController {
     }
 
     @PostMapping("/filter/date")
-    public ResponseEntity<List<CardexDto>> filterDateRange(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end,
-            @RequestParam(required = false) Long toolId) {
-        
-        return ResponseEntity.ok(cardexService.findForRangeDate(start, end, toolId));
+    public ResponseEntity<List<CardexDto>> filterDateRange(DtoTime times) {
+        List<CardexDto> cardexList= cardexService.findForRangeDate(times.getStart(),times.getEnd(), times.getIdTool());
+        return ResponseEntity.ok(cardexList);
     }
 
     @GetMapping("/getAllCardex")

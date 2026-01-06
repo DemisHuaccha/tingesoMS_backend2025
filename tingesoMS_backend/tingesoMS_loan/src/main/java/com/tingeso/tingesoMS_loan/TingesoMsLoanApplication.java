@@ -15,9 +15,4 @@ public class TingesoMsLoanApplication {
 		SpringApplication.run(TingesoMsLoanApplication.class, args);
 	}
 
-    @Bean
-    @LoadBalanced
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
-    }
 }

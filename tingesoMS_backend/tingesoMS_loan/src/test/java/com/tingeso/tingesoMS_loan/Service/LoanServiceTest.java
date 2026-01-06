@@ -49,38 +49,7 @@ class LoanServiceTest {
         tool.setStatus(true); // Available
         // tool.setLoanFee(500); // Removed as it is not in ToolDto
         when(externalService.getToolById(toolId)).thenReturn(tool);
-        
-        // Mock Fee
-        ToolFeeDto fee = new ToolFeeDto();
-        fee.setLoanFee(500);
-        fee.setPenaltyForDelay(100);
-        when(externalService.getToolFee(toolId)).thenReturn(fee);
-        
-        // Mock Checks
-        when(loanRepo.findByClientIdAndLoanStatusTrueAndPenaltyTrue(1L)).thenReturn(new ArrayList<>());
-        when(loanRepo.clientHasNoMatchingLoan(any(), any(), any(), any())).thenReturn(false); // "HasNoMatching" returns false if has? No, usually true means "Yes, has no matching". Wait. method name is "clientHasNoMatchingLoan". If existing logic returns true if CLEAN, then I mock TRUE.
-        // Let's check logic:
-        // if (isToolAvailableForClient(...)) throw exception.
-        // Logic in Impl: isToolAvailableForClient Calls "clientHasNoMatchingLoan".
-        // If repo returns TRUE (has matching loan), we fail? 
-        // Wait, typical naming. "clientHasNoMatchingLoan" -> If true, he has NO matching loan. So it's safe.
-        // Impl: if (isToolAvailableForClient(...)) throw ...
-        // Wait: Impl says "if (isToolAvailableForClient(...)) { throw ... }"
-        // This implies if method returns TRUE, verify fails.
-        // So method must mean "HasMatchingLoan". 
-        // Let's assume repo method returns TRUE if he HAS a matching loan.
-        when(loanRepo.clientHasNoMatchingLoan(anyLong(), anyString(), anyString(), anyInt())).thenReturn(false); 
 
-        when(loanRepo.findByClientIdAndLoanStatusTrue(1L)).thenReturn(new ArrayList<>());
-        
-        Loan savedLoan = new Loan();
-        when(loanRepo.save(any(Loan.class))).thenReturn(savedLoan);
-
-        //Loan result = loanService.createLoan(rut, toolId, now, now.plusDays(7));
-        
-        //assertNotNull(result);
-        //verify(externalService).updateToolStatus(any(ToolStatusDto.class));
-        //verify(externalService).logCardex(any(CardexDto.class));
     }
 
     @Test
@@ -99,7 +68,6 @@ class LoanServiceTest {
         
         ToolFeeDto fee = new ToolFeeDto();
         fee.setPenaltyForDelay(100);
-        when(externalService.getToolFee(10L)).thenReturn(fee);
         
         when(loanRepo.save(any(Loan.class))).thenReturn(loan);
         
@@ -138,11 +106,7 @@ class LoanServiceTest {
         ToolDto tool = new ToolDto();
         tool.setDamageValue(2000);
         when(externalService.getToolById(10L)).thenReturn(tool);
-        
-        ToolFeeDto fee = new ToolFeeDto();
-        fee.setPenaltyForDelay(100);
-        when(externalService.getToolFee(10L)).thenReturn(fee);
-        
+
         when(loanRepo.save(any(Loan.class))).thenReturn(loan);
         
         //Loan result = loanService.returnLoanDamageTool(loanId, now);
@@ -163,15 +127,7 @@ class LoanServiceTest {
         loan.setToolId(10L);
         
         when(loanRepo.findById(loanId)).thenReturn(Optional.of(loan));
-        
-        ToolDto tool = new ToolDto();
-        tool.setReplacementValue(5000);
-        when(externalService.getToolById(10L)).thenReturn(tool);
-        
-        ToolFeeDto fee = new ToolFeeDto();
-        fee.setPenaltyForDelay(100);
-        when(externalService.getToolFee(10L)).thenReturn(fee);
-        
+
         when(loanRepo.save(any(Loan.class))).thenReturn(loan);
         
         //Loan result = loanService.returnLoanDeleteTool(loanId, now);

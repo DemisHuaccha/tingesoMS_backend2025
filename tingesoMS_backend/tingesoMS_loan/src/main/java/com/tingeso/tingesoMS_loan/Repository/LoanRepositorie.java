@@ -17,6 +17,7 @@ public interface LoanRepositorie extends JpaRepository<Loan,Long> {
 
     List<Loan> findByClientIdAndLoanStatusTrueAndPenaltyTrue(Long clientId);
 
+    List<Loan> findByLoanStatusTrue();
 
     @Query("SELECT new com.tingeso.tingesoMS_loan.Dtos.LoanResponseDto(l.idLoan, l.deliveryDate, l.returnDate, l.loanStatus, l.penalty, l.penaltyTotal, l.clientRut, l.toolId, l.priceToPay) FROM Loan l")
     List<LoanResponseDto> findAllWithClientAndToolIds();
@@ -39,4 +40,19 @@ public interface LoanRepositorie extends JpaRepository<Loan,Long> {
 
     @Query("SELECT DISTINCT l.clientId FROM Loan l WHERE l.loanStatus = true AND l.returnDate < CURRENT_DATE")
     List<Long> findDelayedClientIds();
+
+
+    @Query("SELECT COUNT(l) > 0 FROM Loan l " +
+            "WHERE l.clientId = :clientId " +
+            "AND l.toolName = :toolName " +
+            "AND l.toolCategory = :toolCategory " +
+            "AND l.toolLoanFee = :toolLoanFee " +
+            "AND l.loanStatus = true")
+    boolean existsActiveLoanWithSameTool(
+            @Param("clientId") Long clientId,
+            @Param("toolName") String toolName,
+            @Param("toolCategory") String toolCategory,
+            @Param("toolLoanFee") Integer toolLoanFee
+    );
+
 }

@@ -31,7 +31,7 @@ spec:
         - name: EUREKA_INSTANCE_HOSTNAME
           value: "eureka-service"
 
-        # SONDAS EN EL CONTENEDOR (Correcto)
+        # SONDAS EN EL CONTENEDOR
         readinessProbe:
           httpGet:
             path: /actuator/health
@@ -57,5 +57,4 @@ spec:
   ports:
   - port: 8761
     targetPort: 8761
-  # SE ELIMINARON LAS SONDAS DE AQUÍ (No pertenecen al Service)
   type: ClusterIP

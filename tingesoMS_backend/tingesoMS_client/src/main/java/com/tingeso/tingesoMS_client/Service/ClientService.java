@@ -3,6 +3,7 @@ package com.tingeso.tingesoMS_client.Service;
 import com.tingeso.tingesoMS_client.Dtos.CreateClientDto;
 import com.tingeso.tingesoMS_client.Entities.Client;
 import com.tingeso.tingesoMS_client.Repository.ClientRepositorie;
+import com.tingeso.tingesoMS_client.Services.Providers.ExternalServiceProvider;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,8 @@ import java.util.Optional;
 public class ClientService {
     @Autowired
     private ClientRepositorie clientRepo;
+    @Autowired
+    private ExternalServiceProvider externalService;
 
 
     public Client register(CreateClientDto clientDto) {
@@ -29,6 +32,7 @@ public class ClientService {
         client.setPhone(clientDto.getPhone());
         client.setStatus(Boolean.TRUE);
         clientRepo.save(client);
+        externalService.notifyKardexClient(clientDto);
         return client;
     }
     
@@ -81,8 +85,7 @@ public class ClientService {
     
     // Inter-service communication mocked/simulated
     public List<Client> findDelayedClient() {
-
-        return java.util.Collections.emptyList();
+        return clientRepo.findByStatusFalse();
     }
     
     public void restrictClientsWithDelayedLoans() {

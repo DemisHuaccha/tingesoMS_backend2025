@@ -26,7 +26,7 @@ public class CardexServiceImpl {
     @Transactional
     public void saveCardexLoan(DtoLoan loan) {
         Cardex cardex = new Cardex();
-        Long toolId= loan.getIdTool();
+        Long toolId= loan.getToolId();
         String email= loan.getEmail();
 
         DtoTool tool = Optional.ofNullable(externalService.getToolById(toolId))
@@ -38,9 +38,9 @@ public class CardexServiceImpl {
         cardex.setUserEmail(user.getEmail());
         cardex.setTypeMove("Create Loan");
         cardex.setMoveDate(LocalDate.now());
-        cardex.setClientId(loan.getIdClient());
+        cardex.setClientId(loan.getClientId());
         cardex.setClientRut(loan.getClientRut());
-        cardex.setLoanId(loan.getLoanId());
+        cardex.setLoanId(loan.getIdLoan());
         cardex.setAmount(null);
         cardex.setDescription("User with email " + email + " register a loan where rut client is: " + loan.getClientRut());
         cardex.setQuantity(1);
@@ -179,10 +179,10 @@ public class CardexServiceImpl {
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado: " + loanDto.getEmail()));
 
         cardex.setUserEmail(user.getEmail());
-        cardex.setClientId(loan.getIdClient());
+        cardex.setClientId(loan.getClientId());
         cardex.setClientRut(loan.getClientRut());
-        cardex.setLoanId(loan.getLoanId());
-        cardex.setToolId(loan.getIdTool());
+        cardex.setLoanId(loan.getIdLoan());
+        cardex.setToolId(loan.getToolId());
         cardex.setTypeMove("Loan Finished");
         cardex.setMoveDate(LocalDate.now());
         cardex.setQuantity(1);
@@ -202,10 +202,10 @@ public class CardexServiceImpl {
                 .orElseThrow(() -> new IllegalArgumentException("Loan with id: " + loanDto.getLoanId() + " not found"));
 
         cardex.setUserEmail(user.getEmail());
-        cardex.setClientId(loan.getIdClient());
+        cardex.setClientId(loan.getClientId());
         cardex.setClientRut(loan.getClientRut());
-        cardex.setLoanId(loan.getLoanId());
-        cardex.setToolId(loan.getIdTool());
+        cardex.setLoanId(loan.getIdLoan());
+        cardex.setToolId(loan.getToolId());
         cardex.setTypeMove("Loan Finished - Damaged");
         cardex.setMoveDate(LocalDate.now());
         cardex.setQuantity(1);
@@ -226,10 +226,10 @@ public class CardexServiceImpl {
                 .orElseThrow(() -> new IllegalArgumentException("Loan with id: " + loanDto.getLoanId() + " not found"));
 
         cardex.setUserEmail(user.getEmail());
-        cardex.setClientId(loan.getIdClient());
+        cardex.setClientId(loan.getClientId());
         cardex.setClientRut(loan.getClientRut());
-        cardex.setLoanId(loan.getLoanId());
-        cardex.setToolId(loan.getIdTool());
+        cardex.setLoanId(loan.getIdLoan());
+        cardex.setToolId(loan.getToolId());
         cardex.setTypeMove("Loan Finished - Replaced");
         cardex.setMoveDate(LocalDate.now());
         cardex.setQuantity(1);

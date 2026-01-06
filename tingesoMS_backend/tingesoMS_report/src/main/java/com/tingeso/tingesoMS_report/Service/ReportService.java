@@ -24,6 +24,10 @@ public class ReportService {
         // Ajustado a nombres estándar de microservicios
         private static final String LOAN_SERVICE_URL = "http://tingeso-loan/api/loans/report";
         private static final String CLIENT_SERVICE_URL = "http://tingeso-client/api/clients";
+        //private static final String LOAN_SERVICE_URL = "http://localhost:6006/api/loans/report";
+        //private static final String CLIENT_SERVICE_URL = "http://localhost:6002/api/client";
+
+
 
         public List<LoanDto> getActiveLoans() {
             try {

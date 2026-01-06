@@ -68,4 +68,9 @@ public class ClientController {
         List<Client> clients = clientService.findAllById(ids);
         return ResponseEntity.ok(clients);
     }
+
+    @GetMapping("/delayed")
+    public ResponseEntity<List<Client>> findDelayedClient() {
+        return ResponseEntity.ok(clientService.findDelayedClient());
+    }
 }

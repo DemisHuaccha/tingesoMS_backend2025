@@ -16,4 +16,6 @@ public interface ClientRepositorie extends JpaRepository<Client, Long> {
     java.util.List<Client> findByRutContaining(String rut);
 
     List<Client> findByRutContainingIgnoreCase(String rut);
+
+    List<Client> findByStatusFalse();
 }

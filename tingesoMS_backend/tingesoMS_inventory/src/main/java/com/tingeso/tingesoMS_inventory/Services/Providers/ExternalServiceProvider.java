@@ -16,26 +16,32 @@ public class ExternalServiceProvider {
     @Autowired
     private RestTemplate restTemplate;
 
-    public Optional<DtoClient> getUserByEmail(String email) {
-        String url = "http://tingeso-auth/getByEmail";
+    // --- CONSTANTES DE URL BASE ---
+    private final String AUTH_URL = "http://tingeso-auth/api/auth";
+    private final String KARDEX_URL = "http://tingeso-kardex/api/kardex/";
 
-        String urlTemplate = UriComponentsBuilder.fromHttpUrl(url)
+    //private final String AUTH_URL = "http://localhost:6001/api/auth/";
+    //private final String KARDEX_URL = "http://localhost:6005/api/kardex/";
+
+    // --- AUTH SERVICE ---
+
+    public Optional<DtoClient> getUserByEmail(String email) {
+        // Construimos la URL usando la constante AUTH_URL
+        String urlTemplate = UriComponentsBuilder.fromHttpUrl(AUTH_URL + "getByEmail")
                 .queryParam("email", email)
                 .encode()
                 .toUriString();
 
         try {
             DtoClient user = restTemplate.getForObject(urlTemplate, DtoClient.class);
-            return Optional.ofNullable(user); // Devuelve Optional con el usuario o vacío si es null
+            return Optional.ofNullable(user);
         } catch (Exception e) {
             System.err.println("Error buscando usuario por email: " + e.getMessage());
-            return Optional.empty(); // En caso de error (como un 404), devuelve un Optional vacío
+            return Optional.empty();
         }
     }
 
-    /*---------------------------------------*/
-
-    private final String KARDEX_URL = "http://tingeso-kardex/api/kardex/";
+    // --- KARDEX SERVICE ---
 
     /* 1. Notificar Creación de Préstamo */
     public void notifyKardexLoan(DtoLoan loan) {
@@ -71,5 +77,4 @@ public class ExternalServiceProvider {
     public void notifyKardexDeleteTool(CreateToolDto request) {
         restTemplate.postForObject(KARDEX_URL + "saveDeleteTool", request, Void.class);
     }
-
 }

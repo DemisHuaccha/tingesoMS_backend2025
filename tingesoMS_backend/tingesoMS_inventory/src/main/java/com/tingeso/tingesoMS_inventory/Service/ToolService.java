@@ -60,6 +60,7 @@ public class ToolService {
         lastTool.setDescription(dto.getDescription());
         lastTool.setDamageValue(dto.getDamageValue());
         toolRepo.save(lastTool);
+        dto.setIdTool(lastTool.getIdTool());
         externalService.notifyKardexTool(dto);
         return lastTool;
     }
@@ -93,8 +94,8 @@ public class ToolService {
             oldTool.setDamageValue(toolDto.getDamageValue());
             oldTool.setDescription(toolDto.getDescription());
 
-            externalService.notifyKardexUpdateTool(toolDto);
             toolRepo.save(oldTool);
+            externalService.notifyKardexUpdateTool(toolDto);
         }else {
             return null; 
         }

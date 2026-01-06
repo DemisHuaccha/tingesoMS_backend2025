@@ -5,6 +5,7 @@ import com.tingeso.tingesoMS_loan.Entities.Loan;
 import com.tingeso.tingesoMS_loan.Repository.LoanRepositorie;
 import com.tingeso.tingesoMS_loan.Services.Providers.ExternalServiceProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +29,77 @@ public class LoanServiceImpl {
         return loanRepo.clientHasNoMatchingLoan(clientId, toolName, toolCategory, loanFee);
     }
 
+    @Transactional
+    public Loan createLoan(String clientRut, Long toolId, LocalDate deliveryDate, LocalDate expectedReturnDate, String email) {
+        if (clientRut == null || toolId == null) {
+            throw new IllegalArgumentException("clientRut y toolId no pueden ser nulos");
+        }
 
+        ClientDto client = Optional.ofNullable(externalService.getClientByRut(clientRut))
+                .orElseThrow(() -> new IllegalArgumentException("Cliente no encontrado"));
+        Long clientId = client.getIdCustomer();
+
+        ToolDto tool = Optional.ofNullable(externalService.getToolById(toolId))
+                .orElseThrow(() -> new IllegalArgumentException("Herramienta no encontrada"));
+
+        if (Boolean.FALSE.equals(tool.getStatus()) ||
+                Boolean.TRUE.equals(tool.getDeleteStatus()) ||
+                Boolean.TRUE.equals(tool.getUnderRepair())) {
+            throw new IllegalStateException("La herramienta no está disponible para préstamo");
+        }
+
+        List<Loan> defaulter = loanRepo.findByClientIdAndLoanStatusTrueAndPenaltyTrue(clientId);
+        if (!defaulter.isEmpty()) {
+            throw new IllegalStateException("El cliente tiene multas pendientes");
+        }
+
+        int stock = externalService.countAvailable(tool.getName(), tool.getCategory(), tool.getLoanFee());
+        if (stock <= 0) {
+            throw new IllegalStateException("No hay stock disponible para: " + tool.getName());
+        }
+
+        if (loanRepo.existsActiveLoanWithSameTool(clientId, tool.getName(), tool.getCategory(), tool.getLoanFee())){
+            throw new IllegalStateException("El cliente tiene un prestamo con la misma tool");
+        }
+
+        Loan loan = new Loan();
+        // 1. Identificadores de referencias externas
+        loan.setClientId(client.getIdCustomer());
+        loan.setToolId(tool.getIdTool());
+        loan.setClientRut(client.getRut());
+        loan.setToolName(tool.getName());
+        loan.setToolCategory(tool.getCategory());
+        loan.setToolLoanFee(tool.getLoanFee());
+        loan.setDeliveryDate(deliveryDate);
+        loan.setReturnDate(expectedReturnDate);
+        // 5. Estados iniciales
+        loan.setLoanStatus(true);  // Préstamo activo
+        loan.setPenalty(false);    // Inicia sin multa
+        loan.setPenaltyTotal(0);   // Total de multa inicial
+        loan.setPenaltyForDelay(0);
+
+        DtoLoan kloan = new DtoLoan();
+        kloan.setClientId(client.getIdCustomer());
+        kloan.setToolId(tool.getIdTool());
+        kloan.setClientRut(client.getRut());
+        kloan.setToolName(tool.getName());
+        kloan.setToolCategory(tool.getCategory());
+        kloan.setToolLoanFee(tool.getLoanFee());
+
+        kloan.setDeliveryDate(deliveryDate);
+        kloan.setReturnDate(expectedReturnDate);
+        kloan.setLoanStatus(true);  // Préstamo activo
+        kloan.setPenalty(false);    // Inicia sin multa
+        kloan.setPenaltyTotal(0);   // Total de multa inicial
+        kloan.setPenaltyForDelay(0);
+        kloan.setEmail(email);
+
+        tool.setEmail(email);
+        loanRepo.save(loan);
+        externalService.updateToolStatus(tool);
+        externalService.notifyKardexLoan(kloan);
+        return loan;
+    }
 
     // ... (rest of methods)
 
@@ -95,17 +166,19 @@ public class LoanServiceImpl {
         }
 
         // Liberar herramienta en Inventory MS
-        ToolDto status= new ToolDto();
-        status.setIdTool(loan.getToolId());
-        externalService.updateToolStatus(status);
+        tool.setStatus(true);
+        tool.setEmail(dto.getEmail());
+        externalService.updateToolStatus(tool);
 
         loan.setPriceToPay(loan.getPriceToPay());
+
+        loanRepo.save(loan);
 
         // Habilitar cliente en Client MS
         externalService.updateClientStatus(loan.getClientId());
         externalService.notifyKardexReturnLoan(dto);
 
-        return loanRepo.save(loan);
+        return loan;
     }
 
     @Transactional
@@ -127,13 +200,13 @@ public class LoanServiceImpl {
         int delayPenalty = (daysLate > 0) ? (int) (daysLate * tool.getPenaltyForDelay()) : 0;
         int totalPenalty = delayPenalty + tool.getDamageValue();
 
-        loan.setPenalty(true);
+        loan.setPenalty(Boolean.TRUE);
         loan.setPenaltyTotal(totalPenalty);
 
-        ToolDto status= new ToolDto();
-        status.setIdTool(loan.getToolId());
+        tool.setUnderRepair(Boolean.TRUE);
+        tool.setEmail(dto.getEmail());
         // Actualizar herramienta: status=true, underRepair=true en Inventory MS
-        externalService.updateToolDamageStatus(status);
+        externalService.updateToolDamageStatus(tool);
 
         int currentPrice = loan.getPriceToPay() != null ? loan.getPriceToPay() : 0;
         loan.setPriceToPay(currentPrice + tool.getDamageValue());
@@ -163,14 +236,14 @@ public class LoanServiceImpl {
         int delayPenalty = (daysLate > 0) ? (int) (daysLate * tool.getPenaltyForDelay()) : 0;
         int totalPenalty = delayPenalty + tool.getReplacementValue();
 
-        loan.setPenalty(true);
+        loan.setPenalty(Boolean.TRUE);
         loan.setPenaltyTotal(totalPenalty);
 
-        ToolDto status= new ToolDto();
-        status.setIdTool(loan.getToolId());
+        tool.setDeleteStatus(Boolean.TRUE);
+        tool.setEmail(dto.getEmail());
 
         // Actualizar herramienta: status=false, underRepair=false, deleteStatus=false
-        externalService.returnLoanDeleteTool(status);
+        externalService.returnLoanDeleteTool(tool);
 
         int currentPrice = loan.getPriceToPay() != null ? loan.getPriceToPay() : 0;
         loan.setPriceToPay(currentPrice + tool.getReplacementValue());
@@ -200,4 +273,40 @@ public class LoanServiceImpl {
     public Optional<Loan> getLoanById(Long id) {
         return loanRepo.findById(id);
     }
+
+
+    public void checkAndSetPenalties() {
+        // 1. Obtener solo los préstamos activos
+        List<Loan> activeLoans = loanRepo.findByLoanStatusTrue();
+        LocalDate today = LocalDate.now();
+
+        for (Loan loan : activeLoans) {
+            // 2. Verificar si la fecha de hoy es posterior a la fecha de retorno
+            if (today.isAfter(loan.getReturnDate())) {
+
+                // 3. Marcar como penalizado el loan y el cliente
+                loan.setPenalty(true);
+                if(externalService.getClientByRut(loan.getClientRut()).getStatus()==Boolean.TRUE ){
+                    externalService.updateClientStatus(loan.getClientId());
+                }
+                // 4. Calcular días de atraso
+                long daysLate = ChronoUnit.DAYS.between(loan.getReturnDate(), today);
+
+                // 5. Calcular monto total de la multa (Días * Valor diario de multa)
+                if (loan.getPenaltyForDelay() != null) {
+                    int totalPenalty = (int) (daysLate * loan.getPenaltyForDelay());
+                    loan.setPenaltyTotal(totalPenalty);
+                }
+
+                // 6. Guardar los cambios en el préstamo actual
+                loanRepo.save(loan);
+            } else {
+                // Opcional: Asegurar que si no está atrasado, el penalty sea false
+                loan.setPenalty(false);
+                loan.setPenaltyTotal(0);
+                loanRepo.save(loan);
+            }
+        }
+    }
+
 }
