@@ -24,8 +24,7 @@ spec:
           value: "file:///config-data"
         - name: SERVER_PORT
           value: "8888"
-        
-        # Las sondas de salud SIEMPRE van aquí, dentro del contenedor
+
         readinessProbe:
           httpGet:
             path: /actuator/health

@@ -42,7 +42,6 @@ spec:
         - name: EUREKA_HOST
           value: "eureka-service"
 
-        # SONDAS DE SALUD EN EL CONTENEDOR (Correcto)
         readinessProbe:
           httpGet:
             path: /actuator/health
@@ -68,5 +67,4 @@ spec:
   ports:
   - port: 8080
     targetPort: 8080
-  # SE ELIMINARON LAS SONDAS DE AQUÍ (No pertenecen al Service)
   type: ClusterIP

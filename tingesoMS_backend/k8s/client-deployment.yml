@@ -42,7 +42,6 @@ spec:
         - name: EUREKA_HOST
           value: "eureka-service"
 
-        # SONDAS DE SALUD EN EL CONTENEDOR (Correcto)
         readinessProbe:
           httpGet:
             path: /actuator/health
