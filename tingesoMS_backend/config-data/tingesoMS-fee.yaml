@@ -1,5 +1,4 @@
 server:
-  # Establecemos 8080 como puerto estándar para el contenedor en Kubernetes
   port: ${PORT:${SERVER_PORT:8080}}
 
 spring:
@@ -16,7 +15,6 @@ spring:
     show-sql: true
     properties:
       hibernate:
-        # Dialecto optimizado para Hibernate 6
         dialect: org.hibernate.dialect.MySQLDialect
 
 eureka:

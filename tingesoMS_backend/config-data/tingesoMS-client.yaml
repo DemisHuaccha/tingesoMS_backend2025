@@ -1,5 +1,4 @@
 server:
-  # En Kubernetes, fijar el puerto a 8080 es el estándar para facilitar el Service mapping.
   port: ${PORT:${SERVER_PORT:8080}}
 
 spring:
@@ -16,7 +15,6 @@ spring:
     show-sql: true
     properties:
       hibernate:
-        # Dialecto simplificado para Hibernate 6+
         dialect: org.hibernate.dialect.MySQLDialect
 
 eureka:
@@ -26,6 +24,5 @@ eureka:
     service-url:
       defaultZone: http://${EUREKA_HOST:eureka-service}:8761/eureka/
   instance:
-    # ID único para evitar colisiones en Eureka
     instance-id: ${spring.application.name}:${random.value}
     prefer-ip-address: true
