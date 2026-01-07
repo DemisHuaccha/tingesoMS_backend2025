@@ -6,10 +6,7 @@ spring:
   application:
     name: tingesoMS-client
   datasource:
-    # Cambiamos localhost por mysql-service (el nombre del Service en K8s)
     url: jdbc:mysql://${MYSQL_HOST:mysql-service}:3306/client_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
-    # Eliminamos el default ':root' para obligar al servicio a usar las credenciales 
-    # del script de inicio (inyectadas vía Kubernetes Secrets)
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver

@@ -6,9 +6,7 @@ spring:
   application:
     name: tingesoMS-fee
   datasource:
-    # Apuntamos al nombre del Service de la base de datos en el clúster
     url: jdbc:mysql://${MYSQL_HOST:mysql-service}:3306/fee_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
-    # Forzamos el uso de las variables inyectadas por Kubernetes (sin default :root)
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver

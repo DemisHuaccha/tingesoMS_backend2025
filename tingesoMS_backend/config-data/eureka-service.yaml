@@ -8,5 +8,4 @@ eureka:
     register-with-eureka: false
     fetch-registry: false
     service-url:
-      # Mantenemos defaultZone en camelCase para compatibilidad total
       defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
